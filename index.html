@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页签管理器</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/@arco-design/web-react/dist/css/arco.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet"/>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Delingo</h2>
+        <ul id="categoryList"></ul>
+        <div class="import-export-vertical">
+            <button class="control-btn" onclick="openCategoryModal()">
+                <i class="ri-add-line" aria-hidden="true"></i>
+                <span>添加类目</span>
+            </button>
+            <button class="control-btn" onclick="importFile()" aria-label="导入文件">
+                <i class="ri-upload-line"></i>
+                <span>导入</span>
+            </button>
+            <button class="control-btn" onclick="exportFile()" aria-label="导出文件">
+                <i class="ri-download-line"></i>
+                <span>导出</span>
+            </button>
+        </div>
+    </div>
+    <div class="main"> 
+        <div class="header">
+            <div class="header-title">
+                <h2 id="currentCategory">标签</h2>
+                <div class="header-actions" id="categoryActions">
+                    <button class="more-btn" id="moreBtn" aria-label="更多操作">
+                        <i class="ri-more-2-fill"></i>
+                    </button>
+                    <div class="dropdown-menu" id="categoryDropdown">
+                        <button class="dropdown-item" onclick="renameCategory()">
+                            <i class="ri-edit-line"></i>
+                            <span>重命名</span>
+                        </button>
+                        <button class="dropdown-item" onclick="deleteCategory()">
+                            <i class="ri-delete-bin-line"></i>
+                            <span>删除</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="header-controls" id="globalControls">
+                
+                <button class="mode-toggle" onclick="toggleDarkMode()" aria-label="切换深浅色模式">
+                    <!-- 添加浅色模式 SVG -->
+                    <svg id="light-mode-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <!-- 添加深色模式 SVG -->
+                    <svg id="dark-mode-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="cards" id="cardContainer"></div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="modal" id="categoryModal" role="dialog" aria-modal="true">
+        <h3>添加类目</h3>
+        <input type="text" id="categoryInput" placeholder="类目名称">
+        <div class="modal-actions">
+            <button onclick="saveCategory()">保存</button>
+            <button onclick="closeModal()">取消</button>
+        </div>
+    </div>
+    <div class="modal" id="tagModal" role="dialog" aria-modal="true">
+        <h3>添加/编辑标签</h3>
+        <label for="tagNameInput">网站名称</label>
+        <input type="text" id="tagNameInput">
+        <label for="tagUrlInput">网站地址</label>
+        <input type="text" id="tagUrlInput">
+        <label for="tagNoteInput">备注</label>
+        <input type="text" id="tagNoteInput">
+        <div class="modal-actions">
+            <button onclick="saveTag()">保存</button>
+            <button onclick="closeModal()">取消</button>
+        </div>
+    </div>
+
+    <div class="modal" id="duplicateModal" role="dialog" aria-modal="true">
+        <h3>发现重名类目</h3>
+        <p>导入的数据中存在与当前类目重名的项目，请选择处理方式：</p>
+        <div class="duplicate-options">
+            <button onclick="handleDuplicateChoice('merge')">合并</button>
+            <button onclick="handleDuplicateChoice('rename')">不合并</button>
+            <button onclick="handleDuplicateChoice('cancel')">取消</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="renameModal" role="dialog" aria-modal="true">
+        <h3>重命名类目</h3>
+        <input type="text" id="renameInput" placeholder="新的类目名称">
+        <div class="modal-actions">
+            <button onclick="saveRenameCategory()">保存</button>
+            <button onclick="closeModal()">取消</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="deleteModal" role="dialog" aria-modal="true">
+        <h3>确定要删除该类目吗？</h3>
+        <p>删除类目后，该类目下的所有标签将被清空</p>
+        <div class="modal-actions">
+            <button onclick="confirmDeleteCategory()">删除</button>
+            <button onclick="closeModal()">取消</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="deleteTagModal" role="dialog" aria-modal="true">
+        <h3>删除标签</h3>
+        <p>确定要删除该标签吗？</p>
+        <div class="modal-actions">
+            <button onclick="confirmDeleteTag()">删除</button>
+            <button onclick="closeModal()">取消</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
