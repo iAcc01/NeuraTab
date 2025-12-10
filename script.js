@@ -16,17 +16,51 @@ async function checkAuthStatus() {
             currentUser = session.user;
             showUserProfile();
             await loadDataFromSupabase();
+            showMainUI();
         } else {
             currentUser = null;
-            showLoginUI();
+            showFullScreenAuthUI();
         }
     } catch (error) {
         console.error('检查登录状态失败:', error);
-        showLoginUI();
+        showFullScreenAuthUI();
     }
 }
 
-// 显示登录界面
+// 显示全屏登录界面
+function showFullScreenAuthUI() {
+    // 隐藏主要内容
+    document.querySelector('.app-container').style.display = 'none';
+    document.querySelector('.mode-toggle').style.display = 'none';
+    
+    // 创建全屏登录背景
+    let authScreen = document.getElementById('fullscreenAuthScreen');
+    if (!authScreen) {
+        authScreen = document.createElement('div');
+        authScreen.id = 'fullscreenAuthScreen';
+        authScreen.className = 'fullscreen-auth-screen';
+        document.body.insertBefore(authScreen, document.body.firstChild);
+    }
+    
+    authScreen.style.display = 'flex';
+    showAuthModal();
+}
+
+// 显示主应用界面
+function showMainUI() {
+    document.querySelector('.app-container').style.display = 'flex';
+    document.querySelector('.mode-toggle').style.display = 'flex';
+    
+    const authScreen = document.getElementById('fullscreenAuthScreen');
+    if (authScreen) {
+        authScreen.style.display = 'none';
+    }
+    
+    closeModal();
+    renderCategories();
+}
+
+// 显示登录界面（仅限于登录提示）
 function showLoginUI() {
     document.getElementById('userMenuBtn').style.display = 'none';
     document.getElementById('categoryNav').innerHTML = `
@@ -68,8 +102,8 @@ async function logoutUser() {
         categories = [{ name: "全部", tags: [], isDefault: true }];
         localStorage.removeItem('categories');
         isAuthMode = 'login';
-        showLoginUI();
         document.getElementById('userMenu').classList.remove('show');
+        showFullScreenAuthUI();
         alert('已退出登录');
     } catch (error) {
         console.error('登出失败:', error);
@@ -148,15 +182,15 @@ async function handleAuthSubmit(event) {
                 authMessage.className = 'auth-message error';
             } else {
                 currentUser = data.session.user;
-                authMessage.textContent = '登录成功！';
+                authMessage.textContent = '登录成功！正在跳转...';
                 authMessage.className = 'auth-message success';
                 
-                setTimeout(() => {
-                    closeModal();
-                    showUserProfile();
-                    loadDataFromSupabase();
+                setTimeout(async () => {
                     document.getElementById('authForm').reset();
                     authMessage.textContent = '';
+                    await loadDataFromSupabase();
+                    showUserProfile();
+                    showMainUI();
                 }, 1000);
             }
         }
@@ -1155,13 +1189,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 检查登录状态
     checkAuthStatus();
     
-    // 如果未登录，显示登录按钮
-    const categoryNav = document.getElementById('categoryNav');
-    const loginPrompt = document.createElement('div');
-    loginPrompt.className = 'login-prompt';
-    loginPrompt.id = 'loginPrompt';
-    loginPrompt.innerHTML = '<button class="login-btn" onclick="showAuthModal()">登录/注册</button>';
-    
     // 添加主内容区域滚动监听器
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
@@ -1212,8 +1239,14 @@ function showAuthModal() {
         alert('已登录');
         return;
     }
+    
+    // 如果是全屏登录模式，显示遮罩
+    const authScreen = document.getElementById('fullscreenAuthScreen');
+    if (authScreen && authScreen.style.display === 'flex') {
+        document.getElementById('overlay').classList.add('active');
+    }
+    
     document.getElementById('authModal').classList.add('active');
-    document.getElementById('overlay').classList.add('active');
     document.getElementById('authEmail').focus();
 }
 
