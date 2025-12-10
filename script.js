@@ -85,7 +85,12 @@ function showUserProfile() {
     userAvatar.title = email;
     
     const userInfo = document.getElementById('userInfo');
-    userInfo.innerHTML = `<div class="user-email">${email}</div>`;
+    userInfo.innerHTML = `
+        <div class="user-avatar-display" style="margin-bottom: 8px;">
+            <div class="user-avatar-large">${firstChar}</div>
+        </div>
+        <div class="user-email" style="word-break: break-all;">${email}</div>
+    `;
 }
 
 // 切换用户菜单
@@ -262,8 +267,11 @@ async function loadDataFromSupabase() {
         }
         
         if (!categoriesData || categoriesData.length === 0) {
-            // 首次使用，迁移本地数据到云端
-            await migrateLocalDataToCloud();
+            // 首次使用，创建默认类目
+            await createDefaultCategory();
+            // 再加载一次数据
+            await loadDataFromSupabase();
+            return;
         } else {
             // 转换数据格式
             categories = categoriesData.map(cat => ({
