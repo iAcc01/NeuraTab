@@ -1177,6 +1177,7 @@ body.dark-mode .empty-state {
     cursor: pointer;
     transition: all 0.2s ease;
     background: transparent;
+    position: relative;
 }
 
 .user-info-header:hover {
@@ -1243,10 +1244,30 @@ body.dark-mode .empty-state {
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s ease;
+    opacity: 0;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: auto;
+    padding: 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logout-btn-bottom i {
+    font-size: 18px;
+}
+
+.user-info-header:hover .logout-btn-bottom {
+    opacity: 1;
 }
 
 .logout-btn-bottom:hover {
-    background-color: #fff5f5;
+    background-color: rgba(255, 77, 77, 0.1);
 }
 
 /* 登录/注册弹窗样式 */
@@ -1411,15 +1432,6 @@ body.dark-mode .auth-toggle p {
 
 body.dark-mode .auth-toggle a {
     color: var(--dark-primary-color);
-}
-
-/* 深色模式 - 登录提示和用户信息 */
-body.dark-mode .login-prompt-section {
-    border-color: #2a2a2a;
-}
-
-body.dark-mode .login-prompt-content p {
-    color: var(--dark-text-light-color);
 }
 
 body.dark-mode .user-info-header:hover {
