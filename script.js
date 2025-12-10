@@ -15,8 +15,8 @@ async function checkAuthStatus() {
         if (session) {
             currentUser = session.user;
             showUserProfile();
-            await loadDataFromSupabase();
             showMainUI();
+            await loadDataFromSupabase();
         } else {
             currentUser = null;
             showFullScreenAuthUI();
@@ -220,9 +220,9 @@ async function handleAuthSubmit(event) {
                 setTimeout(async () => {
                     document.getElementById('authForm').reset();
                     authMessage.textContent = '';
-                    await loadDataFromSupabase();
                     showUserProfile();
                     showMainUI();
+                    await loadDataFromSupabase();
                 }, 1000);
             }
         }
