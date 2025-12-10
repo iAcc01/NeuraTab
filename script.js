@@ -15,15 +15,15 @@ async function checkAuthStatus() {
         if (session) {
             currentUser = session.user;
             showUserProfile();
-            showMainUI();
             await loadDataFromSupabase();
         } else {
             currentUser = null;
-            showFullScreenAuthUI();
+            showLoginPrompt();
         }
+        showMainUI();
     } catch (error) {
         console.error('检查登录状态失败:', error);
-        showFullScreenAuthUI();
+        showMainUI();
     }
 }
 
@@ -46,6 +46,71 @@ function showFullScreenAuthUI() {
     showAuthModal();
 }
 
+// 显示登录提示（在左下角）
+function showLoginPrompt() {
+    const sidebarControls = document.querySelector('.sidebar-controls');
+    if (!sidebarControls) return;
+    
+    // 检查是否已经存在登录区域
+    let loginSection = document.getElementById('loginPromptSection');
+    if (!loginSection) {
+        loginSection = document.createElement('div');
+        loginSection.id = 'loginPromptSection';
+        loginSection.className = 'login-prompt-section';
+        sidebarControls.insertAdjacentElement('afterend', loginSection);
+    }
+    
+    loginSection.innerHTML = `
+        <div class="login-prompt-content">
+            <p>未登录</p>
+            <button class="login-prompt-btn" onclick="showAuthModal()">登录/注册</button>
+        </div>
+    `;
+    loginSection.style.display = 'flex';
+}
+
+// 显示用户信息区域（在左下角）
+function showUserInfoPrompt() {
+    const sidebarControls = document.querySelector('.sidebar-controls');
+    if (!sidebarControls || !currentUser) return;
+    
+    // 检查是否已经存在登录区域
+    let loginSection = document.getElementById('loginPromptSection');
+    if (!loginSection) {
+        loginSection = document.createElement('div');
+        loginSection.id = 'loginPromptSection';
+        loginSection.className = 'login-prompt-section';
+        sidebarControls.insertAdjacentElement('afterend', loginSection);
+    }
+    
+    const email = currentUser.email || 'User';
+    const firstChar = email.charAt(0).toUpperCase();
+    
+    loginSection.innerHTML = `
+        <div class="user-info-content">
+            <div class="user-info-header" onclick="toggleUserMenuBottom()">
+                <div class="user-avatar-small">${firstChar}</div>
+                <div class="user-info-text">
+                    <div class="user-email-short">${email.split('@')[0]}</div>
+                    <div class="user-status">已登录</div>
+                </div>
+            </div>
+            <div class="user-menu-bottom" id="userMenuBottom">
+                <button class="logout-btn-bottom" onclick="logoutUser()">退出登录</button>
+            </div>
+        </div>
+    `;
+    loginSection.style.display = 'flex';
+}
+
+// 切换底部用户菜单
+function toggleUserMenuBottom() {
+    const userMenuBottom = document.getElementById('userMenuBottom');
+    if (userMenuBottom) {
+        userMenuBottom.classList.toggle('show');
+    }
+}
+
 // 显示主应用界面
 function showMainUI() {
     document.querySelector('.app-container').style.display = 'flex';
@@ -60,20 +125,12 @@ function showMainUI() {
     renderCategories();
 }
 
-// 显示登录界面（仅限于登录提示）
-function showLoginUI() {
-    document.getElementById('userMenuBtn').style.display = 'none';
-    document.getElementById('categoryNav').innerHTML = `
-        <div class="login-prompt">
-            <p>请先登录以同步您的书签</p>
-            <button class="login-btn" onclick="showAuthModal()">登录/注册</button>
-        </div>
-    `;
-}
-
 // 显示用户信息
 function showUserProfile() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        showLoginPrompt();
+        return;
+    }
     
     const userMenuBtn = document.getElementById('userMenuBtn');
     userMenuBtn.style.display = 'block';
@@ -91,6 +148,9 @@ function showUserProfile() {
         </div>
         <div class="user-email" style="word-break: break-all;">${email}</div>
     `;
+    
+    // 同时在左下角显示用户信息
+    showUserInfoPrompt();
 }
 
 // 切换用户菜单
@@ -108,7 +168,13 @@ async function logoutUser() {
         localStorage.removeItem('categories');
         isAuthMode = 'login';
         document.getElementById('userMenu').classList.remove('show');
-        showFullScreenAuthUI();
+        // 关闭底部用户菜单
+        const userMenuBottom = document.getElementById('userMenuBottom');
+        if (userMenuBottom) {
+            userMenuBottom.classList.remove('show');
+        }
+        // 显示登录提示
+        showLoginPrompt();
         alert('已退出登录');
     } catch (error) {
         console.error('登出失败:', error);
@@ -221,8 +287,8 @@ async function handleAuthSubmit(event) {
                     document.getElementById('authForm').reset();
                     authMessage.textContent = '';
                     showUserProfile();
-                    showMainUI();
                     await loadDataFromSupabase();
+                    closeModal();
                 }, 1000);
             }
         }
@@ -736,6 +802,11 @@ function renderCategories() {
 }
 
 function openCategoryModal() {
+    if (!currentUser) {
+        alert('请先登录以创建分组');
+        showAuthModal();
+        return;
+    }
     document.getElementById('categoryModal').classList.add('active');
     document.getElementById('overlay').classList.add('active');
     // 获取焦点
@@ -745,6 +816,11 @@ function openCategoryModal() {
 }
 
 function openTagModal() {
+    if (!currentUser) {
+        alert('请先登录以添加标签');
+        showAuthModal();
+        return;
+    }
     // 清空输入框内容，仅在添加新标签时(非编辑模式)
     if (editingTag === null) {
         document.getElementById('tagNameInput').value = '';
@@ -1275,13 +1351,8 @@ function showAuthModal() {
         return;
     }
     
-    // 如果是全屏登录模式，显示遮罩
-    const authScreen = document.getElementById('fullscreenAuthScreen');
-    if (authScreen && authScreen.style.display === 'flex') {
-        document.getElementById('overlay').classList.add('active');
-    }
-    
     document.getElementById('authModal').classList.add('active');
+    document.getElementById('overlay').classList.add('active');
     document.getElementById('authEmail').focus();
 }
 
