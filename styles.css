@@ -179,28 +179,42 @@ body {
 }
 
 .login-prompt {
-    padding: 16px 12px;
+    padding: 20px 12px;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.login-prompt p {
+    margin: 0;
     color: #999;
     font-size: 13px;
+    line-height: 1.5;
 }
 
 .login-btn {
-    width: 100%;
-    padding: 10px 16px;
+    width: 90%;
+    padding: 12px 16px;
     background: linear-gradient(135deg, #3462ED, #0056b3);
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(52, 98, 237, 0.25);
 }
 
 .login-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(52, 98, 237, 0.3);
+    box-shadow: 0 4px 12px rgba(52, 98, 237, 0.4);
+}
+
+.login-btn:active {
+    transform: translateY(0);
 }
 
 .category-sidebar {
@@ -1168,6 +1182,10 @@ body.dark-mode .logout-btn:hover {
 
 body.dark-mode .login-prompt {
     color: var(--dark-text-lighter-color);
+}
+
+body.dark-mode .login-prompt p {
+    color: var(--dark-text-light-color);
 }
 
 body.dark-mode #authModal input {

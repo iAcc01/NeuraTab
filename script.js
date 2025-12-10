@@ -29,7 +29,12 @@ async function checkAuthStatus() {
 // 显示登录界面
 function showLoginUI() {
     document.getElementById('userMenuBtn').style.display = 'none';
-    document.getElementById('categoryNav').innerHTML = '<div class="login-prompt">请先登录以同步您的书签</div>';
+    document.getElementById('categoryNav').innerHTML = `
+        <div class="login-prompt">
+            <p>请先登录以同步您的书签</p>
+            <button class="login-btn" onclick="showAuthModal()">登录/注册</button>
+        </div>
+    `;
 }
 
 // 显示用户信息
