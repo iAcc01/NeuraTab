@@ -751,9 +751,7 @@ function renderCategories() {
         
     // 生成侧边栏导航链接
     categories.forEach((category, index) => {
-        if (index === 0 && category.isDefault) return; // 不为"全部"类目创建导航项
-        
-        // 创建锚点链接
+        // 创建锚点链接（包括默认的"全部"分组）
         const a = document.createElement('a');
         a.href = `#category-${index}`;
         a.textContent = category.name;
@@ -1049,15 +1047,20 @@ function renderAllCategories() {
     cardContainer.innerHTML = '';
     
     // 检查是否有类目
-    if (categories.length <= 1 && categories[0].isDefault) {
+    if (categories.length === 0) {
         cardContainer.innerHTML = '<div class="empty-state">暂无类目，请先添加类目</div>';
-                return;
-            }
+        return;
+    }
+    
+    // 检查是否只有空的默认类目
+    const hasNonDefaultCategories = categories.some(cat => !cat.isDefault || cat.tags.length > 0);
+    if (!hasNonDefaultCategories) {
+        cardContainer.innerHTML = '<div class="empty-state">暂无类目，请先添加类目</div>';
+        return;
+    }
             
     // 渲染每个类目区域
     categories.forEach((category, categoryIndex) => {
-        if (categoryIndex === 0 && category.isDefault) return; // 跳过"全部"类目
-        
         // 创建类目区域
         const categorySection = document.createElement('div');
         categorySection.className = 'category-section';
@@ -1072,33 +1075,48 @@ function renderAllCategories() {
         categoryTitle.textContent = category.name;
         categoryHeader.appendChild(categoryTitle);
         
-        // 类目操作按钮
-        const categoryActions = document.createElement('div');
-        categoryActions.className = 'category-actions';
-        categoryActions.dataset.categoryIndex = categoryIndex;
-        
-        // 添加按钮
-        const addButton = document.createElement('button');
-        addButton.innerHTML = '<i class="ri-add-line"></i>';
-        addButton.title = '添加标签';
-        addButton.onclick = () => addTagToCategory(categoryIndex);
-        
-        // 重命名按钮
-        const renameButton = document.createElement('button');
-        renameButton.innerHTML = '<i class="ri-edit-line"></i>';
-        renameButton.title = '重命名类目';
-        renameButton.onclick = renameCategory;
-        
-        // 删除按钮
-        const deleteButton = document.createElement('button');
-        deleteButton.innerHTML = '<i class="ri-delete-bin-line"></i>';
-        deleteButton.title = '删除类目';
-        deleteButton.onclick = deleteCategory;
-        
-        categoryActions.appendChild(addButton);
-        categoryActions.appendChild(renameButton);
-        categoryActions.appendChild(deleteButton);
-        categoryHeader.appendChild(categoryActions);
+        // 类目操作按钮（默认分组不显示删除按钮）
+        if (!category.isDefault) {
+            const categoryActions = document.createElement('div');
+            categoryActions.className = 'category-actions';
+            categoryActions.dataset.categoryIndex = categoryIndex;
+            
+            // 添加按钮
+            const addButton = document.createElement('button');
+            addButton.innerHTML = '<i class="ri-add-line"></i>';
+            addButton.title = '添加标签';
+            addButton.onclick = () => addTagToCategory(categoryIndex);
+            
+            // 重命名按钮
+            const renameButton = document.createElement('button');
+            renameButton.innerHTML = '<i class="ri-edit-line"></i>';
+            renameButton.title = '重命名类目';
+            renameButton.onclick = renameCategory;
+            
+            // 删除按钮
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = '<i class="ri-delete-bin-line"></i>';
+            deleteButton.title = '删除类目';
+            deleteButton.onclick = deleteCategory;
+            
+            categoryActions.appendChild(addButton);
+            categoryActions.appendChild(renameButton);
+            categoryActions.appendChild(deleteButton);
+            categoryHeader.appendChild(categoryActions);
+        } else {
+            // 默认分组只显示添加按钮
+            const categoryActions = document.createElement('div');
+            categoryActions.className = 'category-actions';
+            categoryActions.dataset.categoryIndex = categoryIndex;
+            
+            const addButton = document.createElement('button');
+            addButton.innerHTML = '<i class="ri-add-line"></i>';
+            addButton.title = '添加标签';
+            addButton.onclick = () => addTagToCategory(categoryIndex);
+            
+            categoryActions.appendChild(addButton);
+            categoryHeader.appendChild(categoryActions);
+        }
         
         categorySection.appendChild(categoryHeader);
         
