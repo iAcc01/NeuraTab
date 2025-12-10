@@ -1,4 +1,439 @@
-// JavaScript 逻辑保持不变
+// ========== Supabase 配置 ==========
+const SUPABASE_URL = 'https://qiyopgsspzsgutnhwbfs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpeW9wZ3NzcHpzZ3V0bmh3YmZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNDYxNDgsImV4cCI6MjA4MDkyMjE0OH0.mJw3eVQpjEZRrcsUM1zoPVxp_i7k4E-KpUSJjiYGS_E';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let isAuthMode = 'login'; // 'login' 或 'signup'
+
+// ========== 认证相关函数 ==========
+
+// 检查登录状态
+async function checkAuthStatus() {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            showUserProfile();
+            await loadDataFromSupabase();
+        } else {
+            currentUser = null;
+            showLoginUI();
+        }
+    } catch (error) {
+        console.error('检查登录状态失败:', error);
+        showLoginUI();
+    }
+}
+
+// 显示登录界面
+function showLoginUI() {
+    document.getElementById('userMenuBtn').style.display = 'none';
+    document.getElementById('categoryNav').innerHTML = '<div class="login-prompt">请先登录以同步您的书签</div>';
+}
+
+// 显示用户信息
+function showUserProfile() {
+    if (!currentUser) return;
+    
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    userMenuBtn.style.display = 'block';
+    
+    const userAvatar = document.getElementById('userAvatar');
+    const email = currentUser.email || 'User';
+    const firstChar = email.charAt(0).toUpperCase();
+    userAvatar.textContent = firstChar;
+    userAvatar.title = email;
+    
+    const userInfo = document.getElementById('userInfo');
+    userInfo.innerHTML = `<div class="user-email">${email}</div>`;
+}
+
+// 切换用户菜单
+function toggleUserMenu() {
+    const userMenu = document.getElementById('userMenu');
+    userMenu.classList.toggle('show');
+}
+
+// 登出用户
+async function logoutUser() {
+    try {
+        await supabase.auth.signOut();
+        currentUser = null;
+        categories = [{ name: "全部", tags: [], isDefault: true }];
+        localStorage.removeItem('categories');
+        isAuthMode = 'login';
+        showLoginUI();
+        document.getElementById('userMenu').classList.remove('show');
+        alert('已退出登录');
+    } catch (error) {
+        console.error('登出失败:', error);
+        alert('登出失败: ' + error.message);
+    }
+}
+
+// 切换登录/注册模式
+function toggleAuthMode(event) {
+    event.preventDefault();
+    isAuthMode = isAuthMode === 'login' ? 'signup' : 'login';
+    const authModalTitle = document.getElementById('authModalTitle');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+    const authToggleText = document.getElementById('authToggleText');
+    
+    if (isAuthMode === 'signup') {
+        authModalTitle.textContent = '注册';
+        authSubmitBtn.textContent = '注册';
+        authToggleText.innerHTML = '已有账号？<a href="#" onclick="toggleAuthMode(event)">立即登录</a>';
+    } else {
+        authModalTitle.textContent = '登录';
+        authSubmitBtn.textContent = '登录';
+        authToggleText.innerHTML = '还没有账号？<a href="#" onclick="toggleAuthMode(event)">立即注册</a>';
+    }
+}
+
+// 处理认证提交
+async function handleAuthSubmit(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value.trim();
+    const authMessage = document.getElementById('authMessage');
+    
+    if (!email || !password) {
+        authMessage.textContent = '请填写邮箱和密码';
+        authMessage.className = 'auth-message error';
+        return;
+    }
+    
+    if (password.length < 6) {
+        authMessage.textContent = '密码至少6位';
+        authMessage.className = 'auth-message error';
+        return;
+    }
+    
+    try {
+        authMessage.textContent = '处理中...';
+        authMessage.className = 'auth-message loading';
+        
+        if (isAuthMode === 'signup') {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password
+            });
+            
+            if (error) {
+                authMessage.textContent = error.message;
+                authMessage.className = 'auth-message error';
+            } else {
+                authMessage.textContent = '注册成功！请检查邮箱验证（如未收到，请查看垃圾邮件）。现在可以直接登录。';
+                authMessage.className = 'auth-message success';
+                document.getElementById('authForm').reset();
+                isAuthMode = 'login';
+                document.getElementById('authModalTitle').textContent = '登录';
+                document.getElementById('authSubmitBtn').textContent = '登录';
+            }
+        } else {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            if (error) {
+                authMessage.textContent = error.message;
+                authMessage.className = 'auth-message error';
+            } else {
+                currentUser = data.session.user;
+                authMessage.textContent = '登录成功！';
+                authMessage.className = 'auth-message success';
+                
+                setTimeout(() => {
+                    closeModal();
+                    showUserProfile();
+                    loadDataFromSupabase();
+                    document.getElementById('authForm').reset();
+                    authMessage.textContent = '';
+                }, 1000);
+            }
+        }
+    } catch (error) {
+        authMessage.textContent = '操作失败: ' + error.message;
+        authMessage.className = 'auth-message error';
+    }
+}
+
+// ========== 数据库操作函数 ==========
+
+// 从 Supabase 加载数据
+async function loadDataFromSupabase() {
+    if (!currentUser) {
+        loadLocalData();
+        return;
+    }
+    
+    try {
+        const { data: categoriesData, error } = await supabase
+            .from('categories')
+            .select(`
+                id,
+                name,
+                is_default,
+                sort_order,
+                tags (
+                    id,
+                    name,
+                    url,
+                    note,
+                    sort_order
+                )
+            `)
+            .eq('user_id', currentUser.id)
+            .order('sort_order');
+        
+        if (error) {
+            console.error('加载数据失败:', error);
+            loadLocalData();
+            return;
+        }
+        
+        if (!categoriesData || categoriesData.length === 0) {
+            // 首次使用，迁移本地数据到云端
+            await migrateLocalDataToCloud();
+        } else {
+            // 转换数据格式
+            categories = categoriesData.map(cat => ({
+                id: cat.id,
+                name: cat.name,
+                isDefault: cat.is_default,
+                sortOrder: cat.sort_order,
+                tags: (cat.tags || []).map(tag => ({
+                    id: tag.id,
+                    name: tag.name,
+                    url: tag.url,
+                    note: tag.note,
+                    sortOrder: tag.sort_order
+                }))
+            }));
+            
+            // 保存到本地缓存
+            localStorage.setItem('categories', JSON.stringify(categories));
+        }
+        
+        renderCategories();
+    } catch (error) {
+        console.error('从 Supabase 加载数据异常:', error);
+        loadLocalData();
+    }
+}
+
+// 加载本地数据
+function loadLocalData() {
+    categories = JSON.parse(localStorage.getItem('categories') || '[]');
+    if (!Array.isArray(categories)) {
+        categories = [];
+    }
+    
+    let hasDefaultGroup = false;
+    for (let i = 0; i < categories.length; i++) {
+        if (categories[i].isDefault) {
+            hasDefaultGroup = true;
+            break;
+        }
+    }
+    
+    if (!hasDefaultGroup) {
+        categories.unshift({ name: "全部", tags: [], isDefault: true });
+        localStorage.setItem('categories', JSON.stringify(categories));
+    }
+    
+    renderCategories();
+}
+async function migrateLocalDataToCloud() {
+    if (!currentUser) return;
+    
+    const localData = JSON.parse(localStorage.getItem('categories') || '[]');
+    if (localData.length === 0) {
+        // 创建默认类目
+        await createDefaultCategory();
+        return;
+    }
+    
+    try {
+        for (const localCat of localData) {
+            if (localCat.isDefault) continue;
+            
+            // 创建类目
+            const { data: catData, error: catError } = await supabase
+                .from('categories')
+                .insert({
+                    user_id: currentUser.id,
+                    name: localCat.name,
+                    is_default: false
+                })
+                .select()
+                .single();
+            
+            if (catError) {
+                console.error('创建类目失败:', catError);
+                continue;
+            }
+            
+            // 创建标签
+            if (localCat.tags && localCat.tags.length > 0) {
+                const tagsToInsert = localCat.tags.map((tag, index) => ({
+                    category_id: catData.id,
+                    name: tag.name,
+                    url: tag.url,
+                    note: tag.note || '',
+                    sort_order: index
+                }));
+                
+                const { error: tagsError } = await supabase
+                    .from('tags')
+                    .insert(tagsToInsert);
+                
+                if (tagsError) {
+                    console.error('创建标签失败:', tagsError);
+                }
+            }
+        }
+        
+        // 创建默认类目
+        await createDefaultCategory();
+        
+        // 重新加载数据
+        await loadDataFromSupabase();
+        alert('已将本地书签同步到云端！');
+    } catch (error) {
+        console.error('迁移数据失败:', error);
+    }
+}
+
+// 创建默认类目
+async function createDefaultCategory() {
+    if (!currentUser) return;
+    
+    const { error } = await supabase
+        .from('categories')
+        .insert({
+            user_id: currentUser.id,
+            name: '全部',
+            is_default: true,
+            sort_order: 0
+        });
+    
+    if (error) {
+        console.error('创建默认类目失败:', error);
+    }
+}
+
+// 保存类目到 Supabase
+async function saveCategoryToSupabase(categoryName) {
+    if (!currentUser) return null;
+    
+    try {
+        const { data, error } = await supabase
+            .from('categories')
+            .insert({
+                user_id: currentUser.id,
+                name: categoryName,
+                is_default: false,
+                sort_order: categories.length
+            })
+            .select()
+            .single();
+        
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('保存类目失败:', error);
+        return null;
+    }
+}
+
+// 保存标签到 Supabase
+async function saveTagToSupabase(categoryId, tagName, tagUrl, tagNote) {
+    if (!currentUser) return null;
+    
+    try {
+        // 获取该类目下的标签数数
+        const category = categories.find(c => c.id === categoryId);
+        const sortOrder = category ? category.tags.length : 0;
+        
+        const { data, error } = await supabase
+            .from('tags')
+            .insert({
+                category_id: categoryId,
+                name: tagName,
+                url: tagUrl,
+                note: tagNote || '',
+                sort_order: sortOrder
+            })
+            .select()
+            .single();
+        
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('保存标签失败:', error);
+        return null;
+    }
+}
+
+// 删除类目从 Supabase
+async function deleteCategoryFromSupabase(categoryId) {
+    if (!currentUser) return false;
+    
+    try {
+        const { error } = await supabase
+            .from('categories')
+            .delete()
+            .eq('id', categoryId)
+            .eq('user_id', currentUser.id);
+        
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error('删除类目失败:', error);
+        return false;
+    }
+}
+
+// 删除标签从 Supabase
+async function deleteTagFromSupabase(tagId) {
+    if (!currentUser) return false;
+    
+    try {
+        const { error } = await supabase
+            .from('tags')
+            .delete()
+            .eq('id', tagId);
+        
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error('删除标签失败:', error);
+        return false;
+    }
+}
+
+// 更新类目名称在 Supabase
+async function updateCategoryNameInSupabase(categoryId, newName) {
+    if (!currentUser) return false;
+    
+    try {
+        const { error } = await supabase
+            .from('categories')
+            .update({ name: newName })
+            .eq('id', categoryId)
+            .eq('user_id', currentUser.id);
+        
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error('更新类目失败:', error);
+        return false;
+    }
+}
 
 // 导出页签数据为JSON文件
 function exportFile() {
@@ -162,430 +597,77 @@ function processCategoryImport(choice) {
     alert(`导入成功！共有${mergedData.length - 1}个类目`);
 }
 
-let categories = JSON.parse(localStorage.getItem('categories') || '[]');
-if (!Array.isArray(categories)) {
-    categories = [];
-}
+let categories = [];
 let currentCategory = null;
 let editingTag = null;
+let editingCategory = null;
 
-// 检查已有数据，确保存在默认分组
-let hasDefaultGroup = false;
-for (let i = 0; i < categories.length; i++) {
-    if (categories[i].isDefault) {
-        // 如果是默认分组，名称改为"全部"
-        if (categories[i].name === "默认分组") {
-            categories[i].name = "全部";
-            localStorage.setItem('categories', JSON.stringify(categories));
-        }
-        hasDefaultGroup = true;
-        break;
-    }
-}
+// 初始化时加载数据或检查登录状态
 
-// 如果没有默认分组，添加一个（如果已有分组，则将第一个设为默认；否则创建新的）
-if (!hasDefaultGroup) {
-    // 确保始终创建独立的'全部'分类
-    categories.unshift({ name: "全部", tags: [], isDefault: true });
-    localStorage.setItem('categories', JSON.stringify(categories));
-}
-
-// 拖放事件处理函数
-let dragStartIndex;
-let dragElement = null;
-let autoScrollInterval = null; // 自动滚动定时器
-
-function handleDragStart(e) {
-    dragStartIndex = +e.target.dataset.index; // 获取拖动项的索引
-    dragElement = e.target;
-    
-    // 添加拖拽样式前先添加预备类，触发启动动画
-    e.target.classList.add('drag-start');
-    
-    // 延迟添加真正的拖拽类，创造平滑过渡效果
-    setTimeout(() => {
-        // 添加拖拽样式
-        e.target.classList.add('dragging');
-        e.target.classList.remove('drag-start');
+// 渲染类目导航
+function renderCategories() {
+    const categoryNav = document.getElementById('categoryNav');
+    categoryNav.innerHTML = '';
         
-        // 为其他项目添加"可放置"的视觉提示，添加逐个显示的动画效果
-        const dropTargets = document.querySelectorAll('#categoryList li:not(.dragging):not([data-index="0"])');
-        dropTargets.forEach((item, index) => {
-            setTimeout(() => {
-                item.classList.add('drop-target');
-            }, index * 30); // 每个元素延迟30ms显示，创造波浪效应
+    // 生成侧边栏导航链接
+    categories.forEach((category, index) => {
+        if (index === 0 && category.isDefault) return; // 不为"全部"类目创建导航项
+        
+        // 创建锚点链接
+        const a = document.createElement('a');
+        a.href = `#category-${index}`;
+        a.textContent = category.name;
+        a.dataset.index = index;
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            // 移除所有active类
+            document.querySelectorAll('.category-sidebar a').forEach(el => el.classList.remove('active'));
+            // 添加active类到当前点击的元素
+            a.classList.add('active');
+            // 滚动到目标位置，但只滚动主内容区域，不影响侧栏
+            const targetElement = document.getElementById(`category-${index}`);
+            if (targetElement) {
+                const mainContent = document.querySelector('.main-content');
+                const topPosition = targetElement.offsetTop - 20; // 添加一点偏移，防止太贴近顶部
+                mainContent.scrollTo({
+                    top: topPosition,
+                    behavior: 'smooth'
+                });
+            }
         });
-    }, 50);
-    
-    // 设置拖拽图像为半透明
-    // 创建自定义拖拽图像效果
-    const ghostElement = e.target.cloneNode(true);
-    ghostElement.style.position = 'absolute';
-    ghostElement.style.top = '-1000px';
-    ghostElement.style.opacity = '0';
-    document.body.appendChild(ghostElement);
-    
-    // 使用空白图像作为拖拽图像，以使用我们的自定义样式
-    e.dataTransfer.setDragImage(ghostElement, 0, 0);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', null); // 必须设置数据，否则拖放无效
-    
-    // 延迟移除临时元素
-    setTimeout(() => {
-        document.body.removeChild(ghostElement);
-    }, 0);
-    
-    // 添加禁止拖放样式到默认类目
-    if (categories[0].isDefault) {
-        const defaultItem = document.querySelector('#categoryList li[data-index="0"]');
-        if (defaultItem) {
-            defaultItem.classList.add('drop-disabled');
-        }
-    }
-    
-    // 启动拖拽时监听document上的拖拽事件，用于自动滚动
-    document.addEventListener('dragover', handleDocumentDragOver);
-}
-
-// 处理整个文档的拖动事件，用于自动滚动
-function handleDocumentDragOver(e) {
-    const sidebar = document.querySelector('.sidebar-scroll');
-    if (!sidebar) return;
-    
-    const sidebarRect = sidebar.getBoundingClientRect();
-    const scrollSpeed = 5; // 滚动速度
-    const scrollSensitiveArea = 40; // 敏感区域大小（像素）
-    
-    // 清除之前的自动滚动定时器
-    if (autoScrollInterval) {
-        clearInterval(autoScrollInterval);
-        autoScrollInterval = null;
-    }
-    
-    // 判断鼠标位置并设置滚动方向
-    if (e.clientY < sidebarRect.top + scrollSensitiveArea) {
-        // 鼠标在顶部敏感区域，向上滚动
-        autoScrollInterval = setInterval(() => {
-            sidebar.scrollTop -= scrollSpeed;
-        }, 10);
-    } else if (e.clientY > sidebarRect.bottom - scrollSensitiveArea) {
-        // 鼠标在底部敏感区域，向下滚动
-        autoScrollInterval = setInterval(() => {
-            sidebar.scrollTop += scrollSpeed;
-        }, 10);
-    }
-}
-
-function clearDragClasses() {
-    // 清除所有拖拽相关的类
-    document.querySelectorAll('#categoryList li').forEach(item => {
-        item.classList.remove('dragging-over-top', 'dragging-over-bottom', 'drop-disabled', 'dropped', 'drop-target', 'shift-up', 'shift-down', 'swap-positions');
+        
+        categoryNav.appendChild(a);
     });
-}
-
-function handleDragOver(e) {
-    e.preventDefault(); // 允许放置
-    e.dataTransfer.dropEffect = 'move';
-    
-    const target = e.target.closest('li');
-    if (!target || target === dragElement) return; // 如果没有目标或者目标就是被拖拽元素，则返回
-    
-    // 清除先前的拖拽提示样式
-    clearDragClasses();
-    
-    // 如果拖动到默认类目（全部）上，不允许放置
-    if (target.dataset.index === '0' && categories[0].isDefault) {
-        target.classList.add('drop-disabled');
-        return;
-    }
-    
-    const rect = target.getBoundingClientRect();
-    const offset = e.clientY - rect.top;
-    
-    // 获取周围的项目进行精细化的挤开效果
-    const currentIndex = parseInt(dragElement.dataset.index);
-    const targetIndex = parseInt(target.dataset.index);
-    
-    // 添加更多元素的挤开效果
-    if (offset < rect.height / 2) {
-        // 显示将在目标上方插入
-        target.classList.add('dragging-over-top');
-        
-        // 如果目标在拖动元素上方，添加上移动画
-        if (targetIndex < currentIndex) {
-            // 对目标及附近的元素应用梯度挤开效果
-            const siblings = Array.from(document.querySelectorAll('#categoryList li:not(.dragging)'));
-            const targetPos = siblings.indexOf(target);
             
-            // 为目标周围的元素添加不同程度的位移效果
-            for (let i = 0; i < siblings.length; i++) {
-                const distance = Math.abs(i - targetPos);
-                if (distance <= 2) { // 只影响距离目标2个位置内的元素
-                    const intensity = 1 - (distance * 0.3); // 距离越近，效果越强
-                    siblings[i].style.setProperty('--shift-intensity', intensity);
-                    siblings[i].classList.add('shift-up');
-                    
-                    // 为每个元素设置随机的微小延迟，使效果更自然
-                    const randomDelay = Math.random() * 50;
-                    setTimeout(() => {
-                        siblings[i].classList.remove('shift-up');
-                        siblings[i].style.removeProperty('--shift-intensity');
-                    }, 400 + randomDelay);
-                }
-            }
-        }
-        
-        // 动态重排 DOM
-        if (dragElement.nextElementSibling !== target) {
-            target.parentNode.insertBefore(dragElement, target);
-            
-            // 为拖动元素的前后元素添加交换动画
-            if (dragElement.previousElementSibling && dragElement.previousElementSibling !== target) {
-                dragElement.previousElementSibling.classList.add('swap-positions');
-                setTimeout(() => {
-                    if (dragElement.previousElementSibling)
-                        dragElement.previousElementSibling.classList.remove('swap-positions');
-                }, 500);
-            }
-        }
-    } else {
-        // 显示将在目标下方插入
-        target.classList.add('dragging-over-bottom');
-        
-        // 如果目标在拖动元素下方，添加下移动画
-        if (targetIndex > currentIndex) {
-            // 对目标及附近的元素应用梯度挤开效果
-            const siblings = Array.from(document.querySelectorAll('#categoryList li:not(.dragging)'));
-            const targetPos = siblings.indexOf(target);
-            
-            // 为目标周围的元素添加不同程度的位移效果
-            for (let i = 0; i < siblings.length; i++) {
-                const distance = Math.abs(i - targetPos);
-                if (distance <= 2) { // 只影响距离目标2个位置内的元素
-                    const intensity = 1 - (distance * 0.3); // 距离越近，效果越强
-                    siblings[i].style.setProperty('--shift-intensity', intensity);
-                    siblings[i].classList.add('shift-down');
-                    
-                    // 为每个元素设置随机的微小延迟，使效果更自然
-                    const randomDelay = Math.random() * 50;
-                    setTimeout(() => {
-                        siblings[i].classList.remove('shift-down');
-                        siblings[i].style.removeProperty('--shift-intensity');
-                    }, 400 + randomDelay);
-                }
-            }
-        }
-        
-        // 动态重排 DOM
-        if (dragElement !== target.nextElementSibling) {
-            target.parentNode.insertBefore(dragElement, target.nextElementSibling);
-            
-            // 为拖动元素的前后元素添加交换动画
-            if (dragElement.nextElementSibling) {
-                dragElement.nextElementSibling.classList.add('swap-positions');
-                setTimeout(() => {
-                    if (dragElement.nextElementSibling)
-                        dragElement.nextElementSibling.classList.remove('swap-positions');
-                }, 500);
-            }
-        }
-    }
-}
-
-function handleDragEnd(e) {
-    // 停止自动滚动
-    if (autoScrollInterval) {
-        clearInterval(autoScrollInterval);
-        autoScrollInterval = null;
-    }
+    // 渲染所有标签
+    renderAllCategories();
     
-    // 移除文档级拖拽事件监听
-    document.removeEventListener('dragover', handleDocumentDragOver);
-    
-    // 创建更平滑的结束动画序列
-    if (dragElement) {
-        // 先添加结束前的状态类
-        dragElement.classList.add('drag-ending');
-        dragElement.classList.remove('dragging');
-        
-        // 创建顺序动画
+    // 默认激活第一个导航项
+    const firstNav = categoryNav.querySelector('a');
+    if (firstNav) {
+        firstNav.classList.add('active');
+        // 滚动到第一个类目
         setTimeout(() => {
-            // 添加放置动画类
-            dragElement.classList.remove('drag-ending');
-            dragElement.classList.add('dropped');
-            
-            // 为周围元素添加"欢迎"动画
-            const siblings = dragElement.parentNode.children;
-            for (let i = 0; i < siblings.length; i++) {
-                if (siblings[i] !== dragElement) {
-                    siblings[i].classList.add('neighbor-dropped');
-                    setTimeout(() => {
-                        siblings[i].classList.remove('neighbor-dropped');
-                    }, 500);
-                }
+            const firstCategory = document.getElementById(`category-${firstNav.dataset.index}`);
+            if (firstCategory) {
+                const mainContent = document.querySelector('.main-content');
+                const topPosition = firstCategory.offsetTop - 20; // 添加一点偏移，防止太贴近顶部
+                mainContent.scrollTo({
+                    top: topPosition,
+                    behavior: 'smooth'
+                });
             }
-            
-            // 延迟移除放置动画类
-            setTimeout(() => {
-                if (dragElement) {
-                    dragElement.classList.remove('dropped');
-                }
-            }, 700);
         }, 100);
     }
-    
-    // 平滑移除其他拖拽类
-    const dropTargets = document.querySelectorAll('#categoryList li.drop-target');
-    dropTargets.forEach((item, index) => {
-        setTimeout(() => {
-            item.classList.add('fade-out-target');
-            setTimeout(() => {
-                item.classList.remove('drop-target');
-                item.classList.remove('fade-out-target');
-            }, 300);
-        }, index * 50);
-    });
-    
-    // 最后再统一清除所有拖拽相关的类
-    setTimeout(() => {
-        clearDragClasses();
-        dragElement = null;
-    }, 800);
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    
-    // 停止自动滚动
-    if (autoScrollInterval) {
-        clearInterval(autoScrollInterval);
-        autoScrollInterval = null;
-    }
-    
-    // 移除文档级拖拽事件监听
-    document.removeEventListener('dragover', handleDocumentDragOver);
-    
-    // 获取实际的放置索引
-    const categoryItems = Array.from(document.querySelectorAll('#categoryList li'));
-    const newIndex = categoryItems.indexOf(dragElement);
-    
-    // 记录当前选中类目的名称，用于后续重新选择
-    const currentSelectedName = categories[currentCategory]?.name;
-    
-    // 清除拖拽样式
-    if (dragElement) {
-        dragElement.classList.remove('dragging');
-        // 添加放置动画类
-        dragElement.classList.add('dropped');
-        // 延迟移除放置动画类
-        setTimeout(() => {
-            if (dragElement) {
-                dragElement.classList.remove('dropped');
-            }
-        }, 500);
-    }
-    clearDragClasses();
-    
-    // 如果索引有改变，更新数据
-    if (dragStartIndex !== newIndex && newIndex !== -1) {
-        // 更新 categories 数组的顺序
-        const [draggedItem] = categories.splice(dragStartIndex, 1);
-        categories.splice(newIndex, 0, draggedItem);
-        
-        // 确保默认分组（全部）始终在第一位
-        const defaultCategoryIndex = categories.findIndex(c => c.isDefault);
-        if (defaultCategoryIndex !== 0) {
-            const defaultCategory = categories.splice(defaultCategoryIndex, 1)[0];
-            categories.unshift(defaultCategory);
-        }
-        
-        localStorage.setItem('categories', JSON.stringify(categories));
-        
-        // 不需要重新渲染整个列表，仅更新数据
-        // 重新设置索引
-        categoryItems.forEach((item, index) => {
-            item.dataset.index = index;
-        });
-        
-        // 通过名称找到当前选中类目的新索引
-        if (currentSelectedName) {
-            const newSelectedIndex = categories.findIndex(cat => cat.name === currentSelectedName);
-            if (newSelectedIndex !== -1) {
-                // 确保UI和状态同步
-                currentCategory = newSelectedIndex;
-                // 更新选中样式
-                const items = document.querySelectorAll('#categoryList li');
-                for (let i = 0; i < items.length; i++) {
-                    items[i].classList.remove('selected');
-                }
-                if (items[newSelectedIndex]) {
-                    items[newSelectedIndex].classList.add('selected');
-                }
-            }
-        }
-    }
-    
-    dragElement = null;
-}
-
-function renderCategories() {
-    const categoryList = document.getElementById('categoryList');
-    categoryList.innerHTML = '';
-    categories.forEach((category, index) => {
-        const li = document.createElement('li');
-        // 只有非默认类目才可拖动
-        li.draggable = !category.isDefault; // 默认类目（全部）不可拖动
-        li.dataset.index = index; // 存储当前项的索引
-        
-        // 创建类目名称容器
-        const nameContainer = document.createElement('span');
-        nameContainer.className = 'category-name';
-        nameContainer.textContent = category.name;
-        li.appendChild(nameContainer);
-        
-        // 设置点击事件
-        li.onclick = () => switchCategory(index);
-
-        // 只为非默认类目添加拖放事件监听器
-        if (!category.isDefault) {
-            li.addEventListener('dragstart', handleDragStart);
-            li.addEventListener('dragover', handleDragOver);
-            li.addEventListener('dragend', handleDragEnd);
-            li.addEventListener('drop', handleDrop);
-        }
-
-        categoryList.appendChild(li);
-    });
-
-    // 如果有类目，则默认选中第一个类目
-    if (categories.length > 0) {
-        switchCategory(0);
-    }
-}
-
-function switchCategory(index) {
-    if (currentCategory === index) return; // 如果已经是当前类目，则不做任何操作
-    
-    const categoryList = document.getElementById('categoryList');
-    const items = categoryList.getElementsByTagName('li');
-    
-    if (currentCategory !== null && currentCategory < items.length) {
-        items[currentCategory].classList.remove('selected');
-    }
-    
-    items[index].classList.add('selected');
-    currentCategory = index;
-    document.getElementById('currentCategory').textContent = categories[index].name;
-    
-    // 更新更多按钮的可见性
-    updateMoreButtonVisibility();
-    
-    renderTags();
 }
 
 function openCategoryModal() {
     document.getElementById('categoryModal').classList.add('active');
     document.getElementById('overlay').classList.add('active');
+    // 获取焦点
+    setTimeout(() => {
+        document.getElementById('categoryInput').focus();
+    }, 100);
 }
 
 function openTagModal() {
@@ -598,6 +680,10 @@ function openTagModal() {
     }
     document.getElementById('tagModal').classList.add('active');
     document.getElementById('overlay').classList.add('active');
+    // 获取焦点
+    setTimeout(() => {
+        document.getElementById('tagNameInput').focus();
+    }, 100);
 }
 
 function closeModal() {
@@ -607,29 +693,46 @@ function closeModal() {
     document.getElementById('renameModal').classList.remove('active');
     document.getElementById('deleteModal').classList.remove('active');
     document.getElementById('deleteTagModal').classList.remove('active');
+    document.getElementById('authModal').classList.remove('active');
     document.getElementById('overlay').classList.remove('active');
+    document.getElementById('userMenu').classList.remove('show');
     // 重置表单和编辑状态
     document.getElementById('categoryInput').value = '';
+    document.getElementById('authForm').reset();
+    document.getElementById('authMessage').textContent = '';
     editingTag = null;
 }
 
 function saveCategory() {
     const categoryName = document.getElementById('categoryInput').value;
     if (categoryName) {
-        // 确保新类目不会覆盖默认分组
-        const newCategory = { name: categoryName, tags: [], isDefault: false };
-        categories.push(newCategory);
-        
-        // 确保默认分组在第一个位置
-        const defaultCategoryIndex = categories.findIndex(c => c.isDefault);
-        if (defaultCategoryIndex !== 0) {
-            const defaultCategory = categories.splice(defaultCategoryIndex, 1)[0];
-            categories.unshift(defaultCategory);
+        // 如果用户未登录，只保存到本地
+        if (!currentUser) {
+            const newCategory = { name: categoryName, tags: [], isDefault: false };
+            categories.push(newCategory);
+            localStorage.setItem('categories', JSON.stringify(categories));
+            renderCategories();
+            closeModal();
+            return;
         }
         
-        localStorage.setItem('categories', JSON.stringify(categories));
-        renderCategories();
-        closeModal();
+        // 登录状态下，保存到 Supabase
+        saveCategoryToSupabase(categoryName).then(data => {
+            if (data) {
+                const newCategory = {
+                    id: data.id,
+                    name: data.name,
+                    isDefault: data.is_default,
+                    tags: []
+                };
+                categories.push(newCategory);
+                localStorage.setItem('categories', JSON.stringify(categories));
+                renderCategories();
+                closeModal();
+            } else {
+                alert('保存失败，请重试');
+            }
+        });
     }
 }
 
@@ -664,48 +767,85 @@ function saveTag() {
     }
     
     if (editingTag !== null) {
-        categories[currentCategory].tags[editingTag] = { name: tagName, url: tagUrl, note: tagNote }; // 更新备注字段
+        // 编辑现有标签
+        const categoryIndex = editingCategory;
+        const tagIndex = editingTag;
+        categories[categoryIndex].tags[tagIndex] = { name: tagName, url: tagUrl, note: tagNote };
     } else {
-        categories[currentCategory].tags.push({ name: tagName, url: tagUrl, note: tagNote }); // 添加备注字段
+        // 添加新标签
+        const categoryIndex = editingCategory;
+        categories[categoryIndex].tags.push({ name: tagName, url: tagUrl, note: tagNote });
     }
-    localStorage.setItem('categories', JSON.stringify(categories));
     
-    renderTags();
+    // 如果登录了，保存到 Supabase
+    if (currentUser && categories[editingCategory].id) {
+        if (editingTag !== null) {
+            const tag = categories[editingCategory].tags[editingTag];
+            if (tag.id) {
+                supabase
+                    .from('tags')
+                    .update({
+                        name: tagName,
+                        url: tagUrl,
+                        note: tagNote || ''
+                    })
+                    .eq('id', tag.id)
+                    .then(({ error }) => {
+                        if (error) console.error('更新标签失败:', error);
+                    });
+            }
+        } else {
+            saveTagToSupabase(categories[editingCategory].id, tagName, tagUrl, tagNote).then(data => {
+                if (data) {
+                    categories[editingCategory].tags[categories[editingCategory].tags.length - 1].id = data.id;
+                }
+            });
+        }
+    }
+    
+    localStorage.setItem('categories', JSON.stringify(categories));
+    renderAllCategories();
     closeModal();
     
-    // 清空表单，以便下次添加
     document.getElementById('tagNameInput').value = '';
     document.getElementById('tagUrlInput').value = '';
     document.getElementById('tagNoteInput').value = '';
 }
 
-function editTag(index) {
-    editingTag = index;
-    const tag = categories[currentCategory].tags[index];
+function editTag(categoryIndex, tagIndex) {
+    editingCategory = categoryIndex;
+    editingTag = tagIndex;
+    const tag = categories[categoryIndex].tags[tagIndex];
     document.getElementById('tagNameInput').value = tag.name;
     document.getElementById('tagUrlInput').value = tag.url;
-    document.getElementById('tagNoteInput').value = tag.note || ''; // 回显备注信息
-    document.getElementById('tagModal').querySelector('h3').textContent = '编辑标签'; // 修改弹窗标题
+    document.getElementById('tagNoteInput').value = tag.note || '';
+    document.getElementById('tagModal').querySelector('h3').textContent = '编辑标签';
     openTagModal();
 }
 
-function deleteTag(index) {
-    // 保存当前编辑的标签索引
-    editingTag = index;
-    // 显示删除确认弹窗
+function deleteTag(categoryIndex, tagIndex) {
+    editingCategory = categoryIndex;
+    editingTag = tagIndex;
     document.getElementById('deleteTagModal').classList.add('active');
     document.getElementById('overlay').classList.add('active');
 }
 
-// 确认删除标签
 function confirmDeleteTag() {
-    if (editingTag !== null) {
-        categories[currentCategory].tags.splice(editingTag, 1);
-        localStorage.setItem('categories', JSON.stringify(categories));
-        renderTags();
-        editingTag = null;
+    const categoryIndex = editingCategory;
+    const tagIndex = editingTag;
+    const tag = categories[categoryIndex].tags[tagIndex];
+    
+    // 如果登录了，从 Supabase 删除
+    if (currentUser && tag.id) {
+        deleteTagFromSupabase(tag.id);
     }
+    
+    categories[categoryIndex].tags.splice(tagIndex, 1);
+    localStorage.setItem('categories', JSON.stringify(categories));
+    renderAllCategories();
     closeModal();
+    editingTag = null;
+    editingCategory = null;
 }
 
 function toggleDarkMode() {
@@ -753,185 +893,89 @@ function getRandomColor(str) {
     return color;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    renderCategories();
-});
-
-// 更多按钮和下拉菜单功能
-document.addEventListener('DOMContentLoaded', function() {
-    const moreBtn = document.getElementById('moreBtn');
-    const categoryDropdown = document.getElementById('categoryDropdown');
-    const categoryActions = document.getElementById('categoryActions');
-    
-    // 首次加载时初始化更多按钮状态
-    updateMoreButtonVisibility();
-    
-    // 点击更多按钮显示/隐藏下拉菜单
-    moreBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        categoryDropdown.classList.toggle('active');
-    });
-    
-    // 点击其他地方关闭下拉菜单
-    document.addEventListener('click', function(e) {
-        if (!categoryDropdown.contains(e.target) && !moreBtn.contains(e.target)) {
-            categoryDropdown.classList.remove('active');
-        }
-    });
-    
-    // 阻止下拉菜单内部点击事件冒泡
-    categoryDropdown.addEventListener('click', function(e) {
-        e.stopPropagation();
-    });
-});
-
-// 更新更多按钮的可见性
-function updateMoreButtonVisibility() {
-    const categoryActions = document.getElementById('categoryActions');
-    const currentCategory = document.getElementById('currentCategory').textContent;
-    const categories = JSON.parse(localStorage.getItem('categories') || '[]');
-    const category = categories.find(cat => cat.name === currentCategory);
-    
-    // 如果是默认类目（"全部"），不显示更多按钮
-    if (category && category.isDefault) {
-        categoryActions.style.display = 'none';
-    } else {
-        categoryActions.style.display = 'block';
-    }
-}
-
-// 重命名类目 - 打开自定义弹窗
-function renameCategory() {
-    const currentCategory = document.getElementById('currentCategory').textContent;
-    document.getElementById('renameInput').value = currentCategory;
-    
-    // 显示重命名弹窗
-    document.getElementById('renameModal').classList.add('active');
-    document.getElementById('overlay').classList.add('active');
-    
-    // 关闭下拉菜单
-    document.getElementById('categoryDropdown').classList.remove('active');
-}
-
-// 保存重命名
-function saveRenameCategory() {
-    const currentCategoryName = document.getElementById('currentCategory').textContent;
-    const newName = document.getElementById('renameInput').value.trim();
-    
-    if (newName !== '') {
-        const categories = JSON.parse(localStorage.getItem('categories') || '[]');
-        const categoryIndex = categories.findIndex(cat => cat.name === currentCategoryName);
-        
-        if (categoryIndex !== -1) {
-            // 检查是否重名
-            if (categories.some(cat => cat.name === newName && cat.name !== currentCategoryName)) {
-                alert('该名称已存在，请使用其他名称！');
-                return;
-            }
-            
-            categories[categoryIndex].name = newName;
-            localStorage.setItem('categories', JSON.stringify(categories));
-            
-            // 更新显示
-            document.getElementById('currentCategory').textContent = newName;
-            renderCategories();
-            
-            // 重新选中当前类目
-            switchCategory(categoryIndex);
-        }
-    }
-    
-    closeModal();
-}
-
-// 删除类目 - 打开自定义弹窗
-function deleteCategory() {
-    // 显示删除确认弹窗
-    document.getElementById('deleteModal').classList.add('active');
-    document.getElementById('overlay').classList.add('active');
-    
-    // 关闭下拉菜单
-    document.getElementById('categoryDropdown').classList.remove('active');
-}
-
-// 确认删除类目
-function confirmDeleteCategory() {
-    const currentCategoryName = document.getElementById('currentCategory').textContent;
-    const categories = JSON.parse(localStorage.getItem('categories') || '[]');
-    const categoryIndex = categories.findIndex(cat => cat.name === currentCategoryName);
-    
-    if (categoryIndex !== -1) {
-        // 获取默认类目索引（应该是0）
-        const defaultCategoryIndex = categories.findIndex(cat => cat.isDefault);
-        
-        if (defaultCategoryIndex !== -1) {
-            // 将要删除类目的标签移动到默认类目
-            if (categories[categoryIndex].tags && categories[categoryIndex].tags.length > 0) {
-                if (!categories[defaultCategoryIndex].tags) {
-                    categories[defaultCategoryIndex].tags = [];
-                }
-                categories[defaultCategoryIndex].tags = [
-                    ...categories[defaultCategoryIndex].tags,
-                    ...categories[categoryIndex].tags
-                ];
-            }
-            
-            // 删除类目
-            categories.splice(categoryIndex, 1);
-            localStorage.setItem('categories', JSON.stringify(categories));
-            
-            // 重新渲染并切换到默认类目
-            renderCategories();
-            switchCategory(defaultCategoryIndex);
-        }
-    }
-    
-    closeModal();
-}
-
-function renderTags() {
+// 渲染所有类目的标签
+function renderAllCategories() {
     const cardContainer = document.getElementById('cardContainer');
     cardContainer.innerHTML = '';
     
-    if (currentCategory === null) {
-        cardContainer.innerHTML = '<div class="empty-state">请先选择或创建一个类目</div>';
-        return;
-    }
-    
-    const category = categories[currentCategory];
-    
-    // 处理"全部"分组的情况
-    if (category.isDefault) {
-        // 判断所有分组是否都没有标签
-        let allEmpty = true;
-        for (let i = 0; i < categories.length; i++) {
-            if (!categories[i].isDefault && categories[i].tags && categories[i].tags.length > 0) {
-                allEmpty = false;
-                break;
+    // 检查是否有类目
+    if (categories.length <= 1 && categories[0].isDefault) {
+        cardContainer.innerHTML = '<div class="empty-state">暂无类目，请先添加类目</div>';
+                return;
             }
-        }
+            
+    // 渲染每个类目区域
+    categories.forEach((category, categoryIndex) => {
+        if (categoryIndex === 0 && category.isDefault) return; // 跳过"全部"类目
         
-        if (allEmpty) {
-            // 如果没有任何标签，显示空状态提示
+        // 创建类目区域
+        const categorySection = document.createElement('div');
+        categorySection.className = 'category-section';
+        categorySection.id = `category-${categoryIndex}`; // 用于锚点定位
+        
+        // 创建类目标题
+        const categoryHeader = document.createElement('div');
+        categoryHeader.className = 'category-header';
+        
+        // 标题文本
+        const categoryTitle = document.createElement('h2');
+        categoryTitle.textContent = category.name;
+        categoryHeader.appendChild(categoryTitle);
+        
+        // 类目操作按钮
+        const categoryActions = document.createElement('div');
+        categoryActions.className = 'category-actions';
+        categoryActions.dataset.categoryIndex = categoryIndex;
+        
+        // 添加按钮
+        const addButton = document.createElement('button');
+        addButton.innerHTML = '<i class="ri-add-line"></i>';
+        addButton.title = '添加标签';
+        addButton.onclick = () => addTagToCategory(categoryIndex);
+        
+        // 重命名按钮
+        const renameButton = document.createElement('button');
+        renameButton.innerHTML = '<i class="ri-edit-line"></i>';
+        renameButton.title = '重命名类目';
+        renameButton.onclick = renameCategory;
+        
+        // 删除按钮
+        const deleteButton = document.createElement('button');
+        deleteButton.innerHTML = '<i class="ri-delete-bin-line"></i>';
+        deleteButton.title = '删除类目';
+        deleteButton.onclick = deleteCategory;
+        
+        categoryActions.appendChild(addButton);
+        categoryActions.appendChild(renameButton);
+        categoryActions.appendChild(deleteButton);
+        categoryHeader.appendChild(categoryActions);
+        
+        categorySection.appendChild(categoryHeader);
+        
+        // 创建卡片容器
+        const cardsGrid = document.createElement('div');
+        cardsGrid.className = 'cards-grid';
+        
+        // 渲染该类目下的标签
+        if (category.tags.length === 0) {
             const emptyState = document.createElement('div');
             emptyState.className = 'empty-state';
-            emptyState.textContent = '暂无标签，请在其他分组中添加标签';
-            cardContainer.appendChild(emptyState);
-            return;
+            emptyState.textContent = '暂无标签，点击右上角 + 按钮添加';
+            cardsGrid.appendChild(emptyState);
+        } else {
+            category.tags.forEach((tag, tagIndex) => {
+                const card = createTagCard(tag, categoryIndex, tagIndex);
+                cardsGrid.appendChild(card);
+            });
         }
         
-        // 遍历所有非默认分组，按类目分组展示
-        for (let i = 0; i < categories.length; i++) {
-            if (!categories[i].isDefault && categories[i].tags && categories[i].tags.length > 0) {
-                // 创建分组标题
-                const groupTitle = document.createElement('div');
-                groupTitle.className = 'group-title';
-                groupTitle.textContent = categories[i].name;
-                cardContainer.appendChild(groupTitle);
+        categorySection.appendChild(cardsGrid);
+        cardContainer.appendChild(categorySection);
+    });
+}
                 
-                // 添加该分组下的所有标签
-                categories[i].tags.forEach(tag => {
-                    // 在"全部"分组下创建没有编辑功能的卡片
+// 创建标签卡片
+function createTagCard(tag, categoryIndex, tagIndex) {
                     const card = document.createElement('div');
                     card.className = 'card';
                     
@@ -980,161 +1024,225 @@ function renderTags() {
                     infoContainer.className = 'info-container';
                     infoContainer.innerHTML = `
                         <div class="tag-name">${tag.name}</div>
-                        <div class="tag-url">${tag.note ? tag.note : (tag.url.length > 30 ? tag.url.substring(0, 30) + '...' : tag.url)}</div>
+                        <div class="tag-url">${tag.note ? tag.note : tag.url}</div>
                     `;
                     card.appendChild(infoContainer);
+    
+    // 创建操作按钮
+    const actionButtons = document.createElement('div');
+    actionButtons.className = 'action-buttons';
+    
+    // 编辑按钮
+    const editButton = document.createElement('button');
+    editButton.innerHTML = '<i class="ri-edit-line"></i>';
+    editButton.onclick = (e) => {
+        e.stopPropagation(); // 阻止事件冒泡
+        editTag(categoryIndex, tagIndex);
+    };
+    actionButtons.appendChild(editButton);
+    
+    // 删除按钮
+    const deleteButton = document.createElement('button');
+    deleteButton.innerHTML = '<i class="ri-delete-bin-line"></i>';
+    deleteButton.onclick = (e) => {
+        e.stopPropagation(); // 阻止事件冒泡
+        deleteTag(categoryIndex, tagIndex);
+    };
+    actionButtons.appendChild(deleteButton);
+    
+    card.appendChild(actionButtons);
                     
-                    // 绑定卡片点击事件
-                    card.onclick = () => {
-                        window.open(tag.url, '_blank');
-                    };
-                    
-                    cardContainer.appendChild(card);
-                });
-            }
-        }
-        
-        return;
-    }
-    
-    // 非"全部"分组的处理逻辑
-    // 添加"添加标签"卡片
-    const addCard = document.createElement('div');
-    addCard.className = 'card add-card';
-    addCard.onclick = openTagModal;
-    
-    // 创建加号图标和文字的容器
-    const addContent = document.createElement('div');
-    addContent.className = 'add-content';
-    
-    // 创建加号图标
-    const addIcon = document.createElement('i');
-    addIcon.className = 'ri-add-line';
-    
-    // 创建文字说明
-    const addText = document.createElement('div');
-    addText.className = 'add-text';
-    addText.textContent = '添加标签';
-    
-    addContent.appendChild(addIcon);
-    addContent.appendChild(addText);
-    addCard.appendChild(addContent);
-    
-    if (category.tags.length === 0) {
-        // 只显示添加标签卡片，不显示空状态提示
-        cardContainer.appendChild(addCard);
-        return;
-    }
-    
-    category.tags.forEach((tag, index) => {
-        const card = createTagCard(tag, currentCategory, index);
-        cardContainer.appendChild(card);
-    });
-
-    // 在标签列表后添加"添加标签"卡片
-    cardContainer.appendChild(addCard);
-}
-
-// 抽取标签卡片创建逻辑为单独函数
-function createTagCard(tag, categoryIndex, tagIndex) {
-    const card = document.createElement('div');
-    card.className = 'card';
-    if (tagIndex !== undefined) {
-        card.dataset.index = tagIndex;
-    }
-    
-    // 创建 Logo
-    const logo = document.createElement('img');
-    logo.className = 'logo';
-    
-    try {
-        // 提取域名
-        const hostname = new URL(tag.url).hostname;
-        // 尝试从Google的favicon服务获取图标
-        logo.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
-        // 备用方案
-        logo.onerror = () => {
-            // 如果无法从Google获取，设置一个纯色背景和文字作为替代
-            logo.style.display = 'flex';
-            logo.style.justifyContent = 'center';
-            logo.style.alignItems = 'center';
-            logo.style.backgroundColor = getRandomColor(tag.name);
-            logo.style.color = '#ffffff';
-            logo.style.fontSize = '20px';
-            logo.style.fontWeight = 'bold';
-            logo.style.textAlign = 'center';
-            // 使用网站名称的第一个字符作为图标
-            logo.textContent = tag.name.charAt(0).toUpperCase();
-            // 防止重复触发onerror事件
-            logo.onerror = null;
-        };
-    } catch (e) {
-        // 如果URL解析失败，默认使用文字作为图标
-        logo.style.display = 'flex';
-        logo.style.justifyContent = 'center';
-        logo.style.alignItems = 'center';
-        logo.style.backgroundColor = getRandomColor(tag.name);
-        logo.style.color = '#ffffff';
-        logo.style.fontSize = '20px';
-        logo.style.fontWeight = 'bold';
-        logo.style.textAlign = 'center';
-        logo.textContent = tag.name.charAt(0).toUpperCase();
-    }
-    
-    card.appendChild(logo);
-    
-    // 信息容器
-    const infoContainer = document.createElement('div');
-    infoContainer.className = 'info-container';
-    infoContainer.innerHTML = `
-        <div class="tag-name">${tag.name}</div>
-        <div class="tag-url">${tag.note ? tag.note : (tag.url.length > 30 ? tag.url.substring(0, 30) + '...' : tag.url)}</div>
-    `;
-    card.appendChild(infoContainer);
-    
-    // 只在非默认类目下添加操作按钮
-    const currentCat = categories[currentCategory];
-    if (!currentCat.isDefault) {
-        // 操作按钮
-        const actionButtons = document.createElement('div');
-        actionButtons.className = 'action-buttons';
-        
-        const editButton = document.createElement('button');
-        editButton.className = 'edit-button';
-        const editIcon = document.createElement('i');
-        editIcon.className = 'ri-edit-line';
-        editButton.appendChild(editIcon);
-        
-        const deleteButton = document.createElement('button');
-        deleteButton.className = 'delete-button';
-        const deleteIcon = document.createElement('i');
-        deleteIcon.className = 'ri-delete-bin-line';
-        deleteButton.appendChild(deleteIcon);
-        
-        if (tagIndex !== undefined) {
-            // 普通类目下的标签
-            editButton.dataset.index = tagIndex;
-            editButton.onclick = (e) => {
-                e.stopPropagation();
-                editTag(tagIndex);
-            };
-            
-            deleteButton.dataset.index = tagIndex;
-            deleteButton.onclick = (e) => {
-                e.stopPropagation();
-                deleteTag(tagIndex);
-            };
-        }
-        
-        actionButtons.appendChild(editButton);
-        actionButtons.appendChild(deleteButton);
-        card.appendChild(actionButtons);
-    }
-    
     // 绑定卡片点击事件
     card.onclick = () => {
         window.open(tag.url, '_blank');
     };
     
     return card;
+}
+
+// 添加类目的标签创建按钮事件
+function addTagToCategory(categoryIndex) {
+    editingCategory = categoryIndex;
+    editingTag = null;
+    document.getElementById('tagNameInput').value = '';
+    document.getElementById('tagUrlInput').value = '';
+    document.getElementById('tagNoteInput').value = '';
+    document.getElementById('tagModal').querySelector('h3').textContent = '添加标签';
+    openTagModal();
+}
+
+function renameCategory() {
+    // 获取当前点击的类目索引
+    editingCategory = parseInt(event.currentTarget.closest('.category-actions').dataset.categoryIndex);
+    if (editingCategory !== null) {
+        document.getElementById('renameInput').value = categories[editingCategory].name;
+        document.getElementById('renameModal').classList.add('active');
+        document.getElementById('overlay').classList.add('active');
+        // 获取焦点
+        setTimeout(() => {
+            document.getElementById('renameInput').focus();
+        }, 100);
+    }
+}
+
+function saveRenameCategory() {
+    const newName = document.getElementById('renameInput').value.trim();
+    if (newName && editingCategory !== null) {
+        // 检查是否有重名
+        const isDuplicate = categories.some((cat, index) => 
+            index !== editingCategory && cat.name === newName
+        );
+        
+        if (isDuplicate) {
+            alert('已存在同名类目');
+            return;
+        }
+        
+        const categoryId = categories[editingCategory].id;
+        
+        // 如果登录了，更新 Supabase
+        if (currentUser && categoryId) {
+            updateCategoryNameInSupabase(categoryId, newName);
+        }
+    
+        categories[editingCategory].name = newName;
+        localStorage.setItem('categories', JSON.stringify(categories));
+        renderCategories();
+        closeModal();
+    }
+}
+
+function deleteCategory() {
+    // 获取当前点击的类目索引
+    editingCategory = parseInt(event.currentTarget.closest('.category-actions').dataset.categoryIndex);
+    if (editingCategory !== null) {
+        document.getElementById('deleteModal').classList.add('active');
+        document.getElementById('overlay').classList.add('active');
+    }
+}
+
+function confirmDeleteCategory() {
+    if (editingCategory !== null) {
+        // 不能删除默认类目
+        if (categories[editingCategory].isDefault) {
+            alert('默认类目不能删除');
+            closeModal();
+            return;
+        }
+        
+        const categoryId = categories[editingCategory].id;
+        
+        // 如果登录了，从 Supabase 删除
+        if (currentUser && categoryId) {
+            deleteCategoryFromSupabase(categoryId);
+        }
+        
+        categories.splice(editingCategory, 1);
+        localStorage.setItem('categories', JSON.stringify(categories));
+        
+        renderCategories();
+        closeModal();
+    }
+}
+
+// 初始化页面
+document.addEventListener('DOMContentLoaded', () => {
+    // 检查登录状态
+    checkAuthStatus();
+    
+    // 如果未登录，显示登录按钮
+    const categoryNav = document.getElementById('categoryNav');
+    const loginPrompt = document.createElement('div');
+    loginPrompt.className = 'login-prompt';
+    loginPrompt.id = 'loginPrompt';
+    loginPrompt.innerHTML = '<button class="login-btn" onclick="showAuthModal()">登录/注册</button>';
+    
+    // 添加主内容区域滚动监听器
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.addEventListener('scroll', updateActiveNavOnScroll);
+    }
+    
+    // 深色模式检测和设置
+    if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('dark-mode-icon').style.display = 'block';
+        document.getElementById('light-mode-icon').style.display = 'none';
+    } else {
+        document.body.classList.remove('dark-mode');
+        document.getElementById('light-mode-icon').style.display = 'block';
+        document.getElementById('dark-mode-icon').style.display = 'none';
+    }
+
+    // 添加ESC键监听器关闭弹窗
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+
+    // 添加点击遮罩层关闭弹窗
+    const overlay = document.getElementById('overlay');
+    if (overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    }
+    
+    // 点击页面其他地方关闭用户菜单
+    document.addEventListener('click', function(e) {
+        const userMenu = document.getElementById('userMenu');
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        if (userMenu && userMenuBtn && !userMenu.contains(e.target) && !userMenuBtn.contains(e.target)) {
+            userMenu.classList.remove('show');
+        }
+    });
+});
+
+// 显示认证弹窗
+function showAuthModal() {
+    if (currentUser) {
+        alert('已登录');
+        return;
+    }
+    document.getElementById('authModal').classList.add('active');
+    document.getElementById('overlay').classList.add('active');
+    document.getElementById('authEmail').focus();
+}
+
+// 滚动时更新活跃导航项
+function updateActiveNavOnScroll() {
+    // 获取所有类目区域
+    const categorySections = document.querySelectorAll('.category-section');
+    if (categorySections.length === 0) return;
+    
+    const mainContent = document.querySelector('.main-content');
+    const scrollPosition = mainContent.scrollTop + 100; // 添加一些偏移，使导航更早激活
+    
+    // 找到当前滚动位置对应的类目
+    let currentSection = categorySections[0];
+    
+    for (const section of categorySections) {
+        // 检查当前滚动位置是否在此区域上方
+        if (section.offsetTop <= scrollPosition) {
+            currentSection = section;
+        } else {
+            break; // 如果已经超过当前滚动位置，退出循环
+        }
+    }
+    
+    // 获取当前类目对应的索引
+    const currentIndex = currentSection.id.split('-')[1];
+    
+    // 更新侧栏导航激活状态
+    const navLinks = document.querySelectorAll('.category-sidebar a');
+    navLinks.forEach(link => {
+        if (link.dataset.index === currentIndex) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
 }

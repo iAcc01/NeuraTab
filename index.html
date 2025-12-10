@@ -3,81 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>页签管理器</title>
+    <title>NeuraTab</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/@arco-design/web-react/dist/css/arco.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div class="sidebar">
-        <h2>Delingo</h2>
-        <ul id="categoryList"></ul>
-        <div class="import-export-vertical">
-            <button class="control-btn" onclick="openCategoryModal()">
-                <i class="ri-add-line" aria-hidden="true"></i>
-                <span>添加类目</span>
-            </button>
-            <button class="control-btn" onclick="importFile()" aria-label="导入文件">
-                <i class="ri-upload-line"></i>
-                <span>导入</span>
-            </button>
-            <button class="control-btn" onclick="exportFile()" aria-label="导出文件">
-                <i class="ri-download-line"></i>
-                <span>导出</span>
-            </button>
-        </div>
-    </div>
-    <div class="main"> 
-        <div class="header">
-            <div class="header-title">
-                <h2 id="currentCategory">标签</h2>
-                <div class="header-actions" id="categoryActions">
-                    <button class="more-btn" id="moreBtn" aria-label="更多操作">
-                        <i class="ri-more-2-fill"></i>
+    <div class="app-container">
+        <div class="sidebar-nav">
+            <div class="sidebar-header">
+                <div class="header-top">
+                    <h2>NeuraTab</h2>
+                    <button class="user-menu-btn" id="userMenuBtn" onclick="toggleUserMenu()" style="display: none;">
+                        <div class="user-avatar" id="userAvatar"></div>
                     </button>
-                    <div class="dropdown-menu" id="categoryDropdown">
-                        <button class="dropdown-item" onclick="renameCategory()">
-                            <i class="ri-edit-line"></i>
-                            <span>重命名</span>
-                        </button>
-                        <button class="dropdown-item" onclick="deleteCategory()">
-                            <i class="ri-delete-bin-line"></i>
-                            <span>删除</span>
-                        </button>
-                    </div>
+                </div>
+                <div class="user-menu" id="userMenu">
+                    <div class="user-info" id="userInfo"></div>
+                    <button class="logout-btn" onclick="logoutUser()">退出登录</button>
                 </div>
             </div>
-            <div class="header-controls" id="globalControls">
-                
-                <button class="mode-toggle" onclick="toggleDarkMode()" aria-label="切换深浅色模式">
-                    <!-- 添加浅色模式 SVG -->
-                    <svg id="light-mode-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                    <!-- 添加深色模式 SVG -->
-                    <svg id="dark-mode-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
+            <div class="category-sidebar" id="categoryNav"></div>
+            <div class="sidebar-controls">
+                <button class="control-btn" onclick="openCategoryModal()">
+                    <i class="ri-add-line" aria-hidden="true"></i>
+                    <span>添加类目</span>
+                </button>
+                <button class="control-btn" onclick="importFile()" aria-label="导入文件">
+                    <i class="ri-upload-line"></i>
+                    <span>导入</span>
+                </button>
+                <button class="control-btn" onclick="exportFile()" aria-label="导出文件">
+                    <i class="ri-download-line"></i>
+                    <span>导出</span>
                 </button>
             </div>
         </div>
-        <div class="cards" id="cardContainer"></div>
+        <div class="main-content"> 
+            <div id="cardContainer"></div>
+        </div>
     </div>
+
+    <!-- 深浅色模式切换按钮 -->
+    <button class="mode-toggle" onclick="toggleDarkMode()" aria-label="切换深浅色模式">
+        <!-- 添加浅色模式 SVG -->
+        <svg id="light-mode-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <!-- 添加深色模式 SVG -->
+        <svg id="dark-mode-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
 
     <div class="overlay" id="overlay"></div>
     <div class="modal" id="categoryModal" role="dialog" aria-modal="true">
         <h3>添加类目</h3>
+        <button class="close-modal" onclick="closeModal()"><i class="ri-close-line"></i></button>
         <input type="text" id="categoryInput" placeholder="类目名称">
         <div class="modal-actions">
             <button onclick="saveCategory()">保存</button>
@@ -86,12 +80,10 @@
     </div>
     <div class="modal" id="tagModal" role="dialog" aria-modal="true">
         <h3>添加/编辑标签</h3>
-        <label for="tagNameInput">网站名称</label>
-        <input type="text" id="tagNameInput">
-        <label for="tagUrlInput">网站地址</label>
-        <input type="text" id="tagUrlInput">
-        <label for="tagNoteInput">备注</label>
-        <input type="text" id="tagNoteInput">
+        <button class="close-modal" onclick="closeModal()"><i class="ri-close-line"></i></button>
+        <input type="text" id="tagNameInput" placeholder="网站名称">
+        <input type="text" id="tagUrlInput" placeholder="网站地址">
+        <input type="text" id="tagNoteInput" placeholder="备注（选填）">
         <div class="modal-actions">
             <button onclick="saveTag()">保存</button>
             <button onclick="closeModal()">取消</button>
@@ -100,16 +92,22 @@
 
     <div class="modal" id="duplicateModal" role="dialog" aria-modal="true">
         <h3>发现重名类目</h3>
+        <button class="close-modal" onclick="closeModal()"><i class="ri-close-line"></i></button>
         <p>导入的数据中存在与当前类目重名的项目，请选择处理方式：</p>
         <div class="duplicate-options">
             <button onclick="handleDuplicateChoice('merge')">合并</button>
             <button onclick="handleDuplicateChoice('rename')">不合并</button>
             <button onclick="handleDuplicateChoice('cancel')">取消</button>
         </div>
+        <div class="option-explanation">
+            <b>合并</b>：将同名类目的标签合并到一起<br>
+            <b>不合并</b>：为导入的类目自动添加序号，如"工作-1"
+        </div>
     </div>
     
     <div class="modal" id="renameModal" role="dialog" aria-modal="true">
         <h3>重命名类目</h3>
+        <button class="close-modal" onclick="closeModal()"><i class="ri-close-line"></i></button>
         <input type="text" id="renameInput" placeholder="新的类目名称">
         <div class="modal-actions">
             <button onclick="saveRenameCategory()">保存</button>
@@ -119,6 +117,7 @@
     
     <div class="modal" id="deleteModal" role="dialog" aria-modal="true">
         <h3>确定要删除该类目吗？</h3>
+        <button class="close-modal" onclick="closeModal()"><i class="ri-close-line"></i></button>
         <p>删除类目后，该类目下的所有标签将被清空</p>
         <div class="modal-actions">
             <button onclick="confirmDeleteCategory()">删除</button>
@@ -128,10 +127,31 @@
     
     <div class="modal" id="deleteTagModal" role="dialog" aria-modal="true">
         <h3>删除标签</h3>
+        <button class="close-modal" onclick="closeModal()"><i class="ri-close-line"></i></button>
         <p>确定要删除该标签吗？</p>
         <div class="modal-actions">
             <button onclick="confirmDeleteTag()">删除</button>
             <button onclick="closeModal()">取消</button>
+        </div>
+    </div>
+
+    <!-- 登录/注册弹窗 -->
+    <div class="modal" id="authModal" role="dialog" aria-modal="true">
+        <h3 id="authModalTitle">登录</h3>
+        <button class="close-modal" onclick="closeModal()"><i class="ri-close-line"></i></button>
+        
+        <form id="authForm" onsubmit="handleAuthSubmit(event)">
+            <input type="email" id="authEmail" placeholder="请输入邮箱地址" required>
+            <input type="password" id="authPassword" placeholder="请输入密码（6位及以上）" required>
+            <div id="authMessage" class="auth-message"></div>
+            <div class="modal-actions">
+                <button type="submit" id="authSubmitBtn">登录</button>
+                <button type="button" onclick="closeModal()">取消</button>
+            </div>
+        </form>
+        
+        <div class="auth-toggle">
+            <p id="authToggleText">还没有账号？<a href="#" onclick="toggleAuthMode(event)">立即注册</a></p>
         </div>
     </div>
 

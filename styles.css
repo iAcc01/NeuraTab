@@ -34,7 +34,6 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
-    display: flex;
     height: 100vh;
     background-color: var(--bg-color);
     color: var(--text-color);
@@ -42,173 +41,427 @@ body {
     overflow: hidden;
 }
 
-/* 侧边栏 */
-.sidebar {
-    width: 180px;
-    background: linear-gradient(145deg, var(--card-bg), #f6fefc);
-    padding: 20px;
+/* 应用容器 */
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* 侧边栏导航 */
+.sidebar-nav {
+    width: 220px;
+    height: 100%;
+    background-color: #ffffff;
+    border-right: 1px solid #eeeeee;
     display: flex;
     flex-direction: column;
-    border-radius: 4px;
-    box-sizing: border-box;
-    height: 100%;
-}
-
-.sidebar-scroll {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 0 20px;
-    margin-bottom: 0;
-    min-height: 0;
-    height: 0;
-}
-
-.sidebar h2 {
-    margin: 0 0 20px;
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.sidebar ul {
-    list-style: none;
     padding: 0;
-    margin: 0;
-    flex: 1;
+    box-shadow: none;
+    z-index: 10;
+    flex-shrink: 0;
+    overflow-y: hidden;
 }
 
-/* 统一所有列表项样式 */
-.sidebar ul li,
-#categoryList li {
-    padding: 0 12px;
-    height: 40px;
-    line-height: 40px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
+.sidebar-header {
+    padding: 20px 20px 16px;
+    border-bottom: none;
+    margin-bottom: 8px;
+}
+
+.header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-    user-select: none;
 }
 
-.sidebar ul li:hover,
-#categoryList li:hover {
-    background-color: rgba(235, 236, 242, 0.4);
-}
-
-.sidebar ul li.selected,
-#categoryList li.selected {
-    color: var(--primary-color);
-    background-color: var(--primary-light-bg);
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 18px;
     font-weight: 600;
+    color: #333333;
 }
 
-.sidebar ul li button {
+.user-menu-btn {
     background: none;
     border: none;
-    color: #ff4d4d;
     cursor: pointer;
-    font-size: 16px;
-    display: none;
+    padding: 0;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
-.sidebar ul li:hover button {
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3462ED, #0056b3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-menu-btn:hover .user-avatar {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(52, 98, 237, 0.3);
+}
+
+.user-menu {
+    position: absolute;
+    top: 60px;
+    right: 8px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 2000;
+    min-width: 200px;
+    display: none;
+    animation: dropdown-appear 0.2s ease forwards;
+}
+
+.user-menu.show {
     display: block;
 }
 
-.sidebar button, .import-export-vertical .control-btn {
-    background: none;
-    color: var(--text-lighter-color);
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    display: flex;
-    width: 100%;
-    justify-content: flex-start;
+@keyframes dropdown-appear {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.import-export-vertical {
+.user-info {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.user-email {
+    font-size: 13px;
+    color: #666;
+    word-break: break-all;
+}
+
+.logout-btn {
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    color: #ff4d4d;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+    background-color: #fff5f5;
+}
+
+.login-prompt {
+    padding: 16px 12px;
+    text-align: center;
+    color: #999;
+    font-size: 13px;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #3462ED, #0056b3);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 98, 237, 0.3);
+}
+
+.category-sidebar {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.category-sidebar a {
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 400;
+    color: #666666;
+    background-color: transparent;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.category-sidebar a:hover {
+    background-color: #f5f5f5;
+    color: #333333;
+}
+
+.category-sidebar a.active {
+    color: #3462ED;
+    background-color: rgba(52, 98, 237, 0.08);
+    font-weight: 500;
+}
+
+.sidebar-controls {
+    padding: 12px;
+    border-top: 1px solid #f0f0f0;
+    margin-top: 8px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-top: 16px;
 }
 
-.sidebar button i {
-    margin-right: 6px;
-    font-size: 16px;
-}
-
-.sidebar button:hover {
-    background-color: transparent;
-    color: var(--text-light-color);
-}
-
-/* 主内容区 */
-.main {
-    flex: 1;
-    padding: 20px;
-    background-color: rgba(0, 0, 0, 0.01);
-    border-radius: 4px;
-    overflow-y: auto;
-    box-sizing: border-box;
-}
-
-.main h2 {
-    margin: 0 0 20px;
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.cards {
-    padding: 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    grid-gap: 20px;
-}
-
-.card {
-    background: var(--card-bg);
+.sidebar-controls .control-btn {
+    padding: 10px 16px;
     border-radius: 6px;
-    padding: 0px 16px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    color: #666666;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.sidebar-controls .control-btn:hover {
+    background-color: #f5f5f5;
+    color: #333333;
+}
+
+.sidebar-controls .control-btn i {
+    font-size: 16px;
+    color: #999999;
+}
+
+/* 主内容区域 */
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px;
+    scroll-behavior: smooth; /* 平滑滚动 */
+    height: 100%;
+    background-color: #fafafa;
+}
+
+#cardContainer {
+    padding: 0;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* 类目标题 */
+.category-section {
+    margin-bottom: 30px;
+    scroll-margin-top: 20px; /* 确保锚点定位时有足够的顶部空间 */
+    background-color: transparent;
+    border-radius: 0;
     box-shadow: none;
+    padding: 0;
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: none;
+}
+
+.category-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333333;
+}
+
+.category-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.category-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999999;
+    transition: all 0.2s ease;
+}
+
+.category-actions button:hover {
+    background-color: #f5f5f5;
+    color: #666666;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-gap: 16px;
+}
+
+/* 深色模式 */
+body.dark-mode {
+    background-color: var(--dark-bg-color);
+    color: var(--dark-text-color);
+}
+
+body.dark-mode .sidebar-nav {
+    background-color: #1a1a1a;
+    border-color: #2a2a2a;
+}
+
+body.dark-mode .sidebar-header {
+    border-color: var(--dark-border-color);
+}
+
+body.dark-mode .sidebar-header h2 {
+    color: #f0f0f0;
+}
+
+body.dark-mode .category-sidebar a {
+    color: #a0a0a0;
+}
+
+body.dark-mode .category-sidebar a:hover {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .category-sidebar a.active {
+    color: #4dabf7;
+    background-color: rgba(77, 171, 247, 0.15);
+}
+
+body.dark-mode .sidebar-controls {
+    border-color: #2a2a2a;
+}
+
+body.dark-mode .sidebar-controls .control-btn {
+    color: #a0a0a0;
+}
+
+body.dark-mode .sidebar-controls .control-btn:hover {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .sidebar-controls .control-btn i {
+    color: #777777;
+}
+
+body.dark-mode .category-header {
+    border-bottom: none;
+}
+
+body.dark-mode .category-header h2 {
+    color: var(--dark-text-color);
+}
+
+body.dark-mode .category-actions button {
+    color: var(--dark-text-lighter-color);
+}
+
+body.dark-mode .category-actions button:hover {
+    background-color: var(--dark-button-hover-bg);
+    color: var(--dark-text-light-color);
+}
+
+/* 空状态提示 */
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    width: 100%;
+    color: #999999;
+    font-size: 14px;
+    text-align: center;
+    grid-column: 1 / -1;
+    border: 1px dashed #e0e0e0;
+    border-radius: 6px;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #fafafa;
+}
+
+body.dark-mode .empty-state {
+    color: #777777;
+    border-color: #333333;
+    background-color: #1a1a1a;
+}
+
+/* 卡片样式保持不变 */
+.card {
+    background: #ffffff;
+    border-radius: 6px;
+    padding: 12px 16px;
+    border: 1px solid #f0f0f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     display: flex;
     align-items: center;
     position: relative;
     cursor: pointer;
     transition: all 0.2s ease;
     box-sizing: border-box;
-    min-height: 68px;
+    min-height: 60px;
 }
 
 .card .logo {
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     flex-shrink: 0;
-    margin-right: 10px;
-    background-color: #f0f0f0;
+    margin-right: 12px;
+    background-color: #f5f5f5;
     border-radius: 50%;
     object-fit: cover;
     overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-.card .info-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    flex-grow: 1;
-    min-width: 0;
 }
 
 .card .tag-name {
@@ -218,65 +471,56 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: #333333;
 }
 
 .card .tag-url {
     font-size: 12px;
-    color: var(--text-light-color);
+    color: #999999;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
 }
 
+.card .info-container {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.card:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+    border-color: #e5e5e5;
+}
+
 .card .action-buttons {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 8px;
     display: none;
     flex-direction: row;
-    gap: 5px;
+    gap: 2px;
 }
 
 .card .action-buttons button {
     background: none;
     border: none;
     cursor: pointer;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 4px;
+    color: #999999;
     transition: all 0.2s ease;
-    padding: 0;
-}
-
-.card .action-buttons button i {
-    font-size: 16px;
-    line-height: 1;
-    color: var(--text-lighter-color);
-    transition: color 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .card .action-buttons button:hover {
-    background-color: rgba(0, 0, 0, 0.03);
-}
-
-.card .action-buttons button:hover i {
-    color: var(--text-light-color);
-}
-
-.card:hover .action-buttons {
-    display: flex;
-}
-
-.card:hover {
-    box-shadow: 0 4px 12px var(--shadow-color);
-    border-color: var(--border-color);
+    background-color: #f5f5f5;
+    color: #666666;
 }
 
 .card button {
@@ -331,26 +575,26 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     background: var(--card-bg);
-    padding: 28px 32px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 24px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     width: 90%;
-    max-width: 480px;
+    max-width: 440px;
     height: auto;
     transition: all 0.3s ease;
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    border: none;
 }
 
 .modal.active {
     display: block;
-    animation: modal-appear 0.3s ease forwards;
+    animation: modal-appear 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes modal-appear {
     from {
         opacity: 0;
-        transform: translate(-50%, -48%);
+        transform: translate(-50%, -46%);
     }
     to {
         opacity: 1;
@@ -360,45 +604,46 @@ body {
 
 .modal h3 {
     margin: 0;
-    padding: 0 0 20px 0;
+    padding: 0 0 14px 0;
     color: var(--text-color);
     font-size: 20px;
     font-weight: 600;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 24px;
+    border-bottom: none;
+    margin-bottom: 16px;
 }
 
 .modal label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-color);
+    display: none;
 }
 
 .modal input {
     width: 100%;
     box-sizing: border-box;
-    padding: 12px 16px;
+    padding: 12px 14px;
     margin-bottom: 20px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 14px;
     background-color: var(--card-bg);
     color: var(--text-color);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.2s ease;
 }
 
-.modal input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(52, 98, 237, 0.1);
+.modal input::placeholder {
+    color: var(--text-light-color);
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+body.dark-mode .modal input::placeholder {
+    color: var(--dark-text-light-color);
+    opacity: 0.8;
 }
 
 .modal p {
-    margin: 0 0 20px 0;
+    margin: 0 0 16px 0;
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 1.6;
     color: var(--text-light-color);
 }
 
@@ -408,14 +653,14 @@ body {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    margin-top: 28px;
-    border-top: 1px solid var(--border-color);
-    padding-top: 20px;
+    margin-top: 20px;
+    border-top: none;
+    padding-top: 0;
 }
 
 /* 所有模态框按钮 - 浅色模式 */
 .modal button {
-    padding: 10px 20px;
+    padding: 12px 20px;
     cursor: pointer;
     border: none;
     border-radius: 6px;
@@ -424,19 +669,17 @@ body {
     transition: all 0.2s ease;
     background: #f1f3f5;
     color: var(--text-color);
-    min-width: 80px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    min-width: 90px;
+    box-shadow: none;
 }
 
 .modal button:hover {
     background: #e9ecef;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .modal button:active {
     transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* 主要按钮样式 - 浅色模式 */
@@ -444,13 +687,13 @@ body {
 .modal button:first-of-type:not(.close-modal) {
     background: var(--primary-color);
     color: white;
-    box-shadow: 0 2px 6px rgba(52, 98, 237, 0.2);
+    box-shadow: 0 2px 6px rgba(52, 98, 237, 0.15);
 }
 
 .modal button.primary-btn:hover,
 .modal button:first-of-type:not(.close-modal):hover {
     background: var(--primary-hover-color);
-    box-shadow: 0 4px 8px rgba(52, 98, 237, 0.25);
+    box-shadow: 0 4px 8px rgba(52, 98, 237, 0.2);
 }
 
 /* 删除按钮样式 - 浅色模式 */
@@ -458,20 +701,20 @@ body {
 .modal#deleteTagModal button:first-of-type {
     background: #E74B53;
     color: white;
-    box-shadow: 0 2px 6px rgba(231, 75, 83, 0.2);
+    box-shadow: 0 2px 6px rgba(231, 75, 83, 0.15);
 }
 
 .modal#deleteModal button:first-of-type:hover,
 .modal#deleteTagModal button:first-of-type:hover {
     background: #d13c44;
-    box-shadow: 0 4px 8px rgba(231, 75, 83, 0.25);
+    box-shadow: 0 4px 8px rgba(231, 75, 83, 0.2);
 }
 
 /* 添加关闭按钮样式 */
 .close-modal {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 16px;
+    right: 16px;
     background: none !important;
     border: none;
     color: var(--text-lighter-color);
@@ -504,11 +747,11 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.4);
     z-index: 999;
     opacity: 0;
     transition: opacity 0.3s ease;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(3px);
 }
 
 .overlay.active {
@@ -529,7 +772,7 @@ body {
 .duplicate-options {
     display: flex;
     justify-content: space-between;
-    margin: 20px 0;
+    margin: 16px 0 8px 0;
     gap: 12px;
 }
 
@@ -541,340 +784,128 @@ body {
 .option-explanation {
     font-size: 14px;
     color: var(--text-light-color);
-    margin-top: 15px;
-    line-height: 1.6;
+    margin-top: 12px;
+    line-height: 1.5;
     background-color: rgba(52, 98, 237, 0.05);
-    padding: 12px 16px;
+    padding: 12px;
     border-radius: 6px;
     border-left: 3px solid var(--primary-color);
 }
 
-/* 深色模式 */
-body.dark-mode {
-    background-color: var(--dark-bg-color);
-    color: var(--dark-text-color);
-}
-
-body.dark-mode .sidebar {
-    background: linear-gradient(145deg, var(--dark-card-bg), #252525);
-    color: var(--dark-text-color);
-    border-right: 1px solid var(--dark-border-color);
-}
-
-body.dark-mode .sidebar h2,
-body.dark-mode .main h2,
-body.dark-mode .card .tag-name,
-body.dark-mode .group-title {
-    color: var(--dark-text-color);
-}
-
-body.dark-mode .sidebar ul li,
-body.dark-mode #categoryList li {
-    color: var(--dark-text-color);
-}
-
-body.dark-mode .sidebar ul li:hover,
-body.dark-mode #categoryList li:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-body.dark-mode .sidebar ul li.selected,
-body.dark-mode #categoryList li.selected {
-    color: var(--dark-primary-color);
-    background-color: var(--dark-primary-light-bg);
-}
-
-body.dark-mode .sidebar button,
-body.dark-mode .control-btn {
-    color: var(--dark-text-lighter-color);
-}
-
-body.dark-mode .sidebar button:hover,
-body.dark-mode .control-btn:hover {
-    color: var(--dark-text-light-color);
-    background-color: rgba(255, 255, 255, 0.08);
-}
-
-body.dark-mode .main {
-    background-color: #252525;
-}
-
-body.dark-mode .card,
-body.dark-mode .modal,
-body.dark-mode .add-card {
-    background-color: var(--dark-card-bg);
-    border-color: var(--dark-border-color);
-    color: var(--dark-text-color);
-}
-
-body.dark-mode .card .tag-url,
-body.dark-mode .add-card .add-text,
-body.dark-mode .add-card .ri-add-line,
-body.dark-mode .empty-state,
-body.dark-mode .option-explanation {
-    color: var(--dark-text-light-color);
-}
-
-body.dark-mode .card:hover,
-body.dark-mode .add-card:hover {
-    box-shadow: 0 4px 12px var(--dark-shadow-color);
-    border-color: var(--dark-hover-border-color);
-}
-
-body.dark-mode .add-card:hover {
-    background: var(--dark-button-bg);
-}
-
-/* 深色模式下操作按钮样式 */
-body.dark-mode .card .action-buttons button:hover {
-    background-color: rgba(255, 255, 255, 0.03);
-}
-
-body.dark-mode .card .action-buttons button i {
-    color: var(--dark-text-light-color);
-}
-
-body.dark-mode .card .action-buttons button:hover i {
-    color: var(--dark-text-color);
-}
-
-/* 深色模式下的下拉菜单样式 */
-body.dark-mode .more-btn {
-    color: var(--dark-text-lighter-color);
-}
-
-body.dark-mode .more-btn:hover {
-    background-color: var(--dark-button-hover-bg);
-    color: var(--dark-text-color);
-}
-
-body.dark-mode .dropdown-menu {
-    background: var(--dark-card-bg);
-    border-color: var(--dark-border-color);
-}
-
-body.dark-mode .dropdown-item {
-    color: var(--dark-text-color);
-}
-
-body.dark-mode .dropdown-item:hover {
-    background-color: var(--dark-button-hover-bg);
-}
-
-body.dark-mode .dropdown-item i {
-    color: var(--dark-text-lighter-color);
-}
-
-/* 深色模式下弹窗样式 */
+/* 深色模式下的模态框样式 */
 body.dark-mode .modal {
-    background-color: var(--dark-card-bg);
-    border-color: var(--dark-border-color);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    background: var(--dark-card-bg);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--dark-border-color);
 }
 
 body.dark-mode .modal h3 {
     color: var(--dark-text-color);
-    border-bottom-color: var(--dark-border-color);
+    border-color: transparent;
+}
+
+body.dark-mode .modal label {
+    color: var(--dark-text-light-color);
+}
+
+body.dark-mode .modal input {
+    background-color: var(--dark-button-bg);
+    border-color: var(--dark-border-color);
+    color: var(--dark-text-color);
+}
+
+body.dark-mode .modal input:focus {
+    outline: none;
+    border-color: var(--dark-primary-color);
+    box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.15);
 }
 
 body.dark-mode .modal p {
     color: var(--dark-text-light-color);
 }
 
-body.dark-mode .modal label {
-    color: var(--dark-text-color);
-}
-
-body.dark-mode .modal input {
-    background-color: #333; /* 更深一点的输入框背景色，提高对比度 */
-    color: var(--dark-text-color);
-    border-color: var(--dark-border-color);
-}
-
-body.dark-mode .modal input:focus {
-    border-color: var(--dark-primary-color);
-    box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.2);
-}
-
-body.dark-mode .modal input::placeholder {
-    color: #777; /* 更亮一点的占位符颜色，提高对比度 */
-}
-
 body.dark-mode .modal-actions,
 body.dark-mode .modal-buttons {
-    border-top-color: var(--dark-border-color);
+    border-color: transparent;
 }
 
-/* 按钮 - 深色模式特有样式 */
 body.dark-mode .modal button {
-    background: #2a2a2a; /* 更暗的按钮背景色 */
+    background: var(--dark-button-bg);
     color: var(--dark-text-color);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--dark-border-color);
 }
 
 body.dark-mode .modal button:hover {
-    background: #333; /* 更亮的按钮悬停色 */
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
-    border-color: var(--dark-hover-border-color);
-    transform: translateY(-1px);
-}
-
-body.dark-mode .modal button:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    background: var(--dark-button-hover-bg);
 }
 
 body.dark-mode .modal button.primary-btn,
 body.dark-mode .modal button:first-of-type:not(.close-modal) {
     background: var(--dark-primary-color);
     color: #ffffff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-    border: none;
 }
 
 body.dark-mode .modal button.primary-btn:hover,
 body.dark-mode .modal button:first-of-type:not(.close-modal):hover {
     background: var(--dark-primary-hover-color);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-body.dark-mode .modal#deleteModal button:first-of-type,
-body.dark-mode .modal#deleteTagModal button:first-of-type {
-    background: #E74B53;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-    border: none;
-}
-
-body.dark-mode .modal#deleteModal button:first-of-type:hover,
-body.dark-mode .modal#deleteTagModal button:first-of-type:hover {
-    background: #d13c44;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .close-modal {
     color: var(--dark-text-lighter-color);
-    box-shadow: none !important;
-    border: none !important;
-    background: transparent !important;
 }
 
 body.dark-mode .close-modal:hover {
-    color: var(--dark-text-color);
-    background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-body.dark-mode .overlay {
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(3px);
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: var(--dark-text-light-color);
 }
 
 body.dark-mode .option-explanation {
-    background-color: rgba(77, 171, 247, 0.1);
+    background-color: rgba(77, 171, 247, 0.08);
     border-left-color: var(--dark-primary-color);
-    color: var(--dark-text-light-color);
-    border: 1px solid rgba(77, 171, 247, 0.2);
 }
 
-/* 修复深色模式下的控件样式 */
-body.dark-mode .control-btn {
-    background: var(--dark-button-bg);
-    border-color: var(--dark-border-color);
-    color: var(--dark-text-color);
+/* 响应式设计适配 */
+@media (max-width: 768px) {
+    .sidebar-nav {
+        width: 180px;
+    }
+    
+    .cards-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        grid-gap: 16px;
+    }
 }
 
-body.dark-mode .control-btn:hover {
-    background: var(--dark-button-hover-bg);
-    border-color: var(--dark-hover-border-color);
-}
-
-body.dark-mode .header-title h2 {
-    color: var(--dark-text-color);
-}
-
-body.dark-mode .mode-toggle {
-    background-color: var(--dark-card-bg);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-body.dark-mode .mode-toggle:hover {
-    background-color: #333;
-}
-
-body.dark-mode .mode-toggle svg {
-    color: var(--dark-text-lighter-color);
-}
-
-/* 分组标题样式 */
-.group-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-color);
-    margin: 15px 0 0px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    grid-column: 1 / -1;
-}
-
-.group-title:first-child {
-    margin-top: 0;
-}
-
-/* 添加导入导出控件样式 */
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-left: auto;
-}
-
-.import-export-controls {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.control-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background: var(--button-bg);
-    color: var(--text-color);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.control-btn:hover {
-    background: var(--button-hover-bg);
-}
-
-.control-btn i {
-    font-size: 1.2rem;
-}
-
-.export-options {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin: 1rem 0;
-}
-
-.export-options button {
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background: var(--button-bg);
-    color: var(--text-color);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.export-options button:hover {
-    background: var(--button-hover-bg);
+@media (max-width: 480px) {
+    .app-container {
+        flex-direction: column;
+        position: fixed;
+    }
+    
+    .sidebar-nav {
+        width: 100%;
+        height: auto;
+        max-height: 180px;
+        flex-shrink: 0;
+    }
+    
+    .category-sidebar {
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 8px 12px;
+    }
+    
+    .category-sidebar a {
+        white-space: nowrap;
+    }
+    
+    .sidebar-controls {
+        display: none;
+    }
+    
+    .main-content {
+        height: calc(100vh - 180px);
+    }
 }
 
 /* 模式切换按钮 */
@@ -896,6 +927,12 @@ body.dark-mode .mode-toggle svg {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 12px var(--shadow-color);
+    background-color: var(--card-bg);
+}
+
+.mode-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px var(--shadow-color);
 }
 
 .mode-toggle svg {
@@ -905,520 +942,271 @@ body.dark-mode .mode-toggle svg {
     transition: color 0.3s ease;
 }
 
-/* 空状态提示 */
-.empty-state {
-    width: 100%;
-    padding: 30px;
-    text-align: center;
-    color: #888;
-    background-color: #f9f9f9;
-    border-radius: 4px;
-    margin: 20px 0;
-    font-size: 16px;
+/* 深色模式下的模式切换按钮 */
+body.dark-mode .mode-toggle {
+    background-color: var(--dark-card-bg);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    color: var(--dark-primary-color);
 }
 
-/* 类目名称样式 */
-.category-name {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+body.dark-mode .mode-toggle:hover {
+    background-color: #333;
 }
 
-/* 类目列表项样式 */
-#categoryList li {
-    padding: 0 12px;
-    height: 40px;
-    line-height: 40px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-radius: 4px;
-    transition: all 0.3s ease, transform 0.15s ease;
-    user-select: none;
-    position: relative;
-    z-index: 1;
+body.dark-mode .mode-toggle svg {
+    color: var(--dark-text-lighter-color);
 }
 
-/* 拖拽启动前的预备状态 */
-#categoryList li.drag-start {
-    transform: scale(1.01);
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 50;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+/* 深色模式下主内容区域 */
+body.dark-mode .main-content {
+    background-color: #111111;
 }
 
-/* 拖拽中状态的改进 */
-#categoryList li.dragging {
-    animation: float-effect 3s infinite cubic-bezier(0.34, 1.56, 0.64, 1);
-    background-color: var(--primary-light-bg);
-    opacity: 0.85;
-    transform: scale(1.03) translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    z-index: 100;
-    position: relative;
-    outline: none;
-    transition: none;
+body.dark-mode .category-section {
+    background-color: transparent;
+    box-shadow: none;
 }
 
-/* 改进浮动效果动画，使其更平滑 */
-@keyframes float-effect {
-    0% {
-        transform: scale(1.03) translateY(-2px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    }
-    50% {
-        transform: scale(1.03) translateY(-6px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-    }
-    100% {
-        transform: scale(1.03) translateY(-2px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    }
+body.dark-mode .category-header {
+    border-bottom: none;
 }
 
-/* 拖拽结束前的过渡状态 */
-#categoryList li.drag-ending {
-    transform: scale(1.01);
-    opacity: 0.95;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
-                opacity 0.2s ease-out, 
-                box-shadow 0.2s ease-out;
-    z-index: 80;
+body.dark-mode .category-header h2 {
+    color: #e0e0e0;
 }
 
-/* 改进后的放置动画 */
-@keyframes drop-bounce {
-    0% {
-        transform: translateY(-15px) scale(1.03);
-        opacity: 0.7;
-        box-shadow: 0 8px 20px rgba(52, 98, 237, 0.25);
-    }
-    30% {
-        transform: translateY(6px) scale(1.01);
-    }
-    50% {
-        transform: translateY(-3px) scale(1.005);
-    }
-    70% {
-        transform: translateY(1px);
-    }
-    100% {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-        box-shadow: none;
-    }
+body.dark-mode .category-actions button {
+    color: #777777;
 }
 
-/* 为挤开效果添加强度变量 */
-#categoryList li.shift-up {
-    animation: shift-up 0.4s ease forwards;
-    --shift-intensity: 1;
-}
-
-#categoryList li.shift-down {
-    animation: shift-down 0.4s ease forwards;
-    --shift-intensity: 1;
-}
-
-/* 改进的向上移动动画 */
-@keyframes shift-up {
-    0% {
-        transform: translateY(0);
-    }
-    40% {
-        transform: translateY(-3px);
-    }
-    100% {
-        transform: translateY(0);
-    }
-}
-
-/* 改进的向下移动动画 */
-@keyframes shift-down {
-    0% {
-        transform: translateY(0);
-    }
-    40% {
-        transform: translateY(3px);
-    }
-    100% {
-        transform: translateY(0);
-    }
-}
-
-/* 为目标元素添加淡出效果 */
-#categoryList li.fade-out-target {
-    opacity: 0.3;
-    transition: opacity 0.3s ease-out;
-}
-
-/* 拖拽放置后周围元素的反应动画 */
-#categoryList li.neighbor-dropped {
-    animation: welcome-neighbor 0.5s ease-out;
-}
-
-@keyframes welcome-neighbor {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.02);
-        background-color: rgba(52, 98, 237, 0.03);
-    }
-    100% {
-        transform: scale(1);
-        background-color: transparent;
-    }
-}
-
-/* 深色模式适配 */
-body.dark-mode #categoryList li.neighbor-dropped {
-    animation: dark-welcome-neighbor 0.5s ease-out;
-}
-
-@keyframes dark-welcome-neighbor {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.02);
-        background-color: rgba(77, 171, 247, 0.05);
-    }
-    100% {
-        transform: scale(1);
-        background-color: transparent;
-    }
-}
-
-/* 媒体查询 - 响应式设计 */
-@media (max-width: 768px) {
-    .sidebar {
-        width: 160px;
-        padding: 16px;
-    }
-    
-    .cards {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        padding: 16px;
-        grid-gap: 16px;
-    }
-    
-    .modal {
-        width: 95%;
-        padding: 20px;
-    }
-}
-
-@media (max-width: 480px) {
-    body {
-        flex-direction: column;
-    }
-    
-    .sidebar {
-        width: 100%;
-        height: auto;
-        padding: 12px;
-    }
-    
-    .main {
-        padding: 12px;
-    }
-    
-    .cards {
-        grid-template-columns: 1fr;
-        padding: 12px;
-    }
-}
-
-/* 标题栏样式 */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.header-title {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.header-title h2 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.header-actions {
-    position: relative;
-}
-
-.more-btn {
-    background: none;
-    border: none;
-    padding: 8px;
-    cursor: pointer;
-    color: var(--text-lighter-color);
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.more-btn:hover {
-    background-color: var(--button-hover-bg);
-    color: var(--text-color);
-}
-
-.more-btn i {
-    font-size: 16px;
-}
-
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    box-shadow: 0 4px 12px var(--shadow-color);
-    z-index: 1001;
-    min-width: 100px;
-    margin-top: 4px;
-}
-
-.dropdown-menu.active {
-    display: block;
-}
-
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 8px 16px;
-    border: none;
-    background: none;
-    color: var(--text-color);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-}
-
-.dropdown-item:hover {
-    background-color: var(--button-hover-bg);
-}
-
-.dropdown-item i {
-    font-size: 16px;
-    color: var(--text-lighter-color);
-}
-
-/* 修复深色模式下空状态样式 */
-body.dark-mode .empty-state {
+body.dark-mode .category-actions button:hover {
     background-color: #2a2a2a;
-    color: #aaa;
+    color: #a0a0a0;
 }
 
-/* 修复深色模式下编辑和删除按钮样式 */
-body.dark-mode #categoryList li .edit-button,
-body.dark-mode #categoryList li .delete-button {
-    color: #888;
+/* 深色模式下的卡片样式 */
+body.dark-mode .card {
+    background: #202020;
+    border-color: #2a2a2a;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* 深色模式下的拖拽样式 */
-body.dark-mode #categoryList li.dragging {
-    background-color: var(--dark-primary-light-bg);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+body.dark-mode .card .logo {
+    background-color: #2a2a2a;
+}
+
+body.dark-mode .card .tag-name {
+    color: #e0e0e0;
+}
+
+body.dark-mode .card .tag-url {
+    color: #888888;
+}
+
+body.dark-mode .card .info-container {
+    color: #e0e0e0;
+}
+
+body.dark-mode .card:hover {
+    border-color: #404040;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+body.dark-mode .card .action-buttons button {
+    color: #777777;
+}
+
+body.dark-mode .card .action-buttons button:hover {
+    background-color: #2a2a2a;
+    color: #a0a0a0;
+}
+
+body.dark-mode .empty-state {
+    color: #777777;
+    border-color: #333333;
+    background-color: #1a1a1a;
+}
+
+.card:hover .action-buttons {
+    display: flex;
+}
+
+.modal input:focus {
     outline: none;
-    animation: float-effect-dark 2.5s infinite ease-in-out;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 98, 237, 0.1);
 }
 
-body.dark-mode #categoryList li.dragging-over-top {
-    border-top: 2px solid var(--dark-primary-color);
+/* 页头样式 */
+.page-header {
+    display: none;
 }
 
-body.dark-mode #categoryList li.dragging-over-bottom {
-    border-bottom: 2px solid var(--dark-primary-color);
+.search-container, 
+.search-input-wrapper, 
+.search-icon, 
+#searchInput, 
+.header-actions, 
+.login-btn,
+.wechat-login-container,
+.login-tips,
+.login-notification,
+.login-btn.logged-in,
+.user-avatar {
+    display: none;
 }
 
-@keyframes float-effect-dark {
-    0% {
-        transform: scale(1.05) translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-    }
-    50% {
-        transform: scale(1.05) translateY(-8px);
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
-    }
-    100% {
-        transform: scale(1.05) translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-    }
+/* 登录/注册弹窗样式 */
+#authModal {
+    width: 90%;
+    max-width: 400px;
 }
 
-/* 禁止拖放区域的样式 */
-#categoryList li.drop-disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    position: relative;
+#authModal form {
+    display: flex;
+    flex-direction: column;
 }
 
-/* hover 时的样式 */
-#categoryList li .edit-button:hover,
-#categoryList li .delete-button:hover {
-    background-color: rgba(0, 0, 0, 0.03);
+#authModal input {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
 }
 
-@keyframes dark-bg-wave {
-    0% {
-        background-position: 0% 50%;
-    }
-    100% {
-        background-position: 200% 50%;
-    }
+#authModal input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 98, 237, 0.1);
 }
 
-/* 可放置的目标样式 */
-#categoryList li.drop-target {
-    transition: background-color 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-    background-color: rgba(52, 98, 237, 0.05);
+#authModal input::placeholder {
+    color: var(--text-light-color);
 }
 
-/* 深色模式下可放置的目标样式 */
-body.dark-mode #categoryList li.drop-target {
-    background-color: rgba(77, 171, 247, 0.1);
+.auth-message {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    text-align: center;
+    display: none;
 }
 
-/* 列表项移动时的平滑过渡动画 */
-#categoryList li:not(.dragging) {
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, opacity 0.3s ease, border-color 0.3s ease, margin 0.3s ease;
+.auth-message.error {
+    display: block;
+    background-color: #fff2f0;
+    color: #ff4d4d;
+    border: 1px solid #ffccc7;
 }
 
-/* 放置后的动画效果 */
-#categoryList li.dropped {
-    animation: drop-bounce 0.7s ease;
+.auth-message.success {
+    display: block;
+    background-color: #f6ffed;
+    color: #52c41a;
+    border: 1px solid #b7eb8f;
 }
 
-@keyframes drop-bounce {
-    0% {
-        transform: translateY(-10px);
-        opacity: 0.7;
-        box-shadow: 0 6px 16px rgba(52, 98, 237, 0.2);
-    }
-    30% {
-        transform: translateY(4px);
-    }
-    50% {
-        transform: translateY(-2px);
-    }
-    70% {
-        transform: translateY(1px);
-    }
-    100% {
-        transform: translateY(0);
-        opacity: 1;
-        box-shadow: none;
-    }
+.auth-message.loading {
+    display: block;
+    background-color: #e6f7ff;
+    color: #1890ff;
+    border: 1px solid #91d5ff;
 }
 
-/* 深色模式下的边界发光 */
-body.dark-mode #categoryList li.dragging-over-top,
-body.dark-mode #categoryList li.dragging-over-bottom {
-    animation: glow-border-dark 1.5s infinite alternate;
+.auth-toggle {
+    text-align: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
 }
 
-@keyframes glow-border-dark {
-    from {
-        border-color: var(--dark-primary-color);
-        box-shadow: 0 0 3px var(--dark-primary-color);
-    }
-    to {
-        border-color: rgba(77, 171, 247, 0.5);
-        box-shadow: 0 0 8px var(--dark-primary-color);
-    }
+.auth-toggle p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-light-color);
 }
 
-/* 当元素被拖动时，为其他元素添加位移效果，创造"挤开"的视觉效果 */
-#categoryList li.shift-down {
-    animation: shift-down 0.4s ease forwards;
+.auth-toggle a {
+    color: var(--primary-color);
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 500;
 }
 
-#categoryList li.shift-up {
-    animation: shift-up 0.4s ease forwards;
+.auth-toggle a:hover {
+    text-decoration: underline;
 }
 
-/* 向下移动的动画 */
-@keyframes shift-down {
-    0% {
-        transform: translateY(0);
-    }
-    25% {
-        transform: translateY(5px);
-    }
-    100% {
-        transform: translateY(0);
-    }
+/* 深色模式下的登录样式 */
+body.dark-mode .user-menu {
+    background: var(--dark-card-bg);
+    border-color: var(--dark-border-color);
 }
 
-/* 向上移动的动画 */
-@keyframes shift-up {
-    0% {
-        transform: translateY(0);
-    }
-    25% {
-        transform: translateY(-5px);
-    }
-    100% {
-        transform: translateY(0);
-    }
+body.dark-mode .user-info {
+    border-color: var(--dark-border-color);
 }
 
-/* 深色模式下的交换位置动画 */
-body.dark-mode #categoryList li.swap-positions {
-    animation: dark-swap-pulse 0.5s ease;
+body.dark-mode .user-email {
+    color: var(--dark-text-light-color);
 }
 
-@keyframes dark-swap-pulse {
-    0% {
-        transform: scale(1);
-        background-color: inherit;
-    }
-    50% {
-        transform: scale(1.03);
-        background-color: rgba(77, 171, 247, 0.15);
-    }
-    100% {
-        transform: scale(1);
-        background-color: inherit;
-    }
+body.dark-mode .logout-btn {
+    color: #ff4d4d;
 }
 
-/* 交换位置动画 */
-#categoryList li.swap-positions {
-    animation: swap-pulse 0.5s ease;
+body.dark-mode .logout-btn:hover {
+    background-color: rgba(255, 77, 77, 0.1);
 }
 
-@keyframes swap-pulse {
-    0% {
-        transform: scale(1);
-        background-color: inherit;
-    }
-    50% {
-        transform: scale(1.02);
-        background-color: rgba(52, 98, 237, 0.08);
-    }
-    100% {
-        transform: scale(1);
-        background-color: inherit;
-    }
+body.dark-mode .login-prompt {
+    color: var(--dark-text-lighter-color);
+}
+
+body.dark-mode #authModal input {
+    background-color: var(--dark-button-bg);
+    border-color: var(--dark-border-color);
+    color: var(--dark-text-color);
+}
+
+body.dark-mode #authModal input:focus {
+    border-color: var(--dark-primary-color);
+    box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.15);
+}
+
+body.dark-mode .auth-message.error {
+    background-color: rgba(255, 77, 77, 0.1);
+    color: #ff4d4d;
+    border-color: rgba(255, 77, 77, 0.3);
+}
+
+body.dark-mode .auth-message.success {
+    background-color: rgba(82, 196, 26, 0.1);
+    color: #52c41a;
+    border-color: rgba(82, 196, 26, 0.3);
+}
+
+body.dark-mode .auth-message.loading {
+    background-color: rgba(24, 144, 255, 0.1);
+    color: #1890ff;
+    border-color: rgba(24, 144, 255, 0.3);
+}
+
+body.dark-mode .auth-toggle {
+    border-color: var(--dark-border-color);
+}
+
+body.dark-mode .auth-toggle p {
+    color: var(--dark-text-light-color);
+}
+
+body.dark-mode .auth-toggle a {
+    color: var(--dark-primary-color);
 }
