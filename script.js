@@ -130,6 +130,12 @@ function toggleAuthMode(event) {
     }
 }
 
+// 验证邮箱格式
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
 // 处理认证提交
 async function handleAuthSubmit(event) {
     event.preventDefault();
@@ -140,6 +146,12 @@ async function handleAuthSubmit(event) {
     
     if (!email || !password) {
         authMessage.textContent = '请填写邮箱和密码';
+        authMessage.className = 'auth-message error';
+        return;
+    }
+    
+    if (!isValidEmail(email)) {
+        authMessage.textContent = '请输入有效的邮箱地址（如：user@gmail.com）';
         authMessage.className = 'auth-message error';
         return;
     }
@@ -161,7 +173,16 @@ async function handleAuthSubmit(event) {
             });
             
             if (error) {
-                authMessage.textContent = error.message;
+                // 处理特定的错误信息
+                let errorText = error.message;
+                if (errorText.includes('invalid')) {
+                    errorText = '邮箱格式无效。请使用真实邮箱（如：user@gmail.com）';
+                } else if (errorText.includes('already exists')) {
+                    errorText = '该邮箱已被注册';
+                } else if (errorText.includes('password')) {
+                    errorText = '密码不符合要求（需要至少6个字符）';
+                }
+                authMessage.textContent = errorText;
                 authMessage.className = 'auth-message error';
             } else {
                 authMessage.textContent = '注册成功！请检查邮箱验证（如未收到，请查看垃圾邮件）。现在可以直接登录。';
@@ -178,7 +199,13 @@ async function handleAuthSubmit(event) {
             });
             
             if (error) {
-                authMessage.textContent = error.message;
+                let errorText = error.message;
+                if (errorText.includes('Invalid')) {
+                    errorText = '邮箱或密码错误';
+                } else if (errorText.includes('Email not confirmed')) {
+                    errorText = '邮箱未验证，请检查邮箱中的验证链接';
+                }
+                authMessage.textContent = errorText;
                 authMessage.className = 'auth-message error';
             } else {
                 currentUser = data.session.user;
